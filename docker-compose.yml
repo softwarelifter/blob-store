@@ -32,9 +32,9 @@ services:
     environment:
       - METADATA_STORAGE_HOST=metadata_storage
       - METADATA_STORAGE_PORT=5432
-      - POSTGRES_DB: blobstore
-      - POSTGRES_USER: blobstore_user
-      - POSTGRES_PASSWORD: blobstore_password
+      - POSTGRES_DB=blobstore
+      - POSTGRES_USER=blobstore_user
+      - POSTGRES_PASSWORD=blobstore_password
     volumes:
       - manager_logs:/logs
 

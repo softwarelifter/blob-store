@@ -77,19 +77,46 @@ def login():
         )
 
 
+from flask import request, jsonify
+
+
 @app.route("/create_container", methods=["POST"])
 def create_container():
-    data = request.get_json()
-    user_id = data["user_id"]
-    container_name = data["container_name"]
-    print(f"Creating container {container_name} for user {user_id}")
-    cur = connection.cursor()
-    cur.execute(
-        "INSERT INTO containers (name, user_id) VALUES (%s, %s)",
-        (container_name, user_id),
-    )
-    connection.commit()
-    return jsonify({"status": "success"}), 201
+    try:
+        data = request.get_json()
+        user_id = data["user_id"]
+        container_name = data["container_name"]
+        print(f"Creating container {container_name} for user {user_id}")
+        cur = connection.cursor()
+        cur.execute(
+            "INSERT INTO containers (name, user_id) VALUES (%s, %s)",
+            (container_name, user_id),
+        )
+        connection.commit()
+        return jsonify({"status": "success"}), 201
+    except Exception as e:
+        # Rollback the transaction if an error occurs
+        connection.rollback()
+        print(f"Error: {e}")
+        return jsonify({"error": "An error occurred"}), 500
+    finally:
+        if "cur" in locals():
+            cur.close()  # Close the cursor to release resources
+
+
+# @app.route("/create_container", methods=["POST"])
+# def create_container():
+#     data = request.get_json()
+#     user_id = data["user_id"]
+#     container_name = data["container_name"]
+#     print(f"Creating container {container_name} for user {user_id}")
+#     cur = connection.cursor()
+#     cur.execute(
+#         "INSERT INTO containers (name, user_id) VALUES (%s, %s)",
+#         (container_name, user_id),
+#     )
+#     connection.commit()
+#     return jsonify({"status": "success"}), 201
 
 
 # @app.route("/put_data", methods=["POST"])
