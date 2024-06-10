@@ -36,12 +36,22 @@ def put_data(
     print(response.json())
 
 
-# def get_data(container_name, blob_name):
-#     response = requests.get(
-#         "http://localhost/get_data",
-#         params={"container": container_name, "blob": blob_name},
-#     )
-#     print(response.json())
+def get_data(user_id, container_name, blob_name):
+    response = requests.get(
+        "http://localhost:8080/get_data",
+        params={"container": container_name, "blob": blob_name, "user_id": user_id},
+    )
+    if response.status_code != 200:
+        return jsonify({"status": "failure", "error": response.json()}), 500
+    # print(response.json())
+    with open(blob_name, "wb") as f:
+        for chunk_id, data in response.json().items():
+            # Ensure `data["blob_data"]` is a string and then encode it to bytes
+            blob_data = data["blob_data"]
+            if isinstance(blob_data, str):
+                blob_data = blob_data.encode("utf-8")
+            f.write(blob_data)
+    # print(response.json())
 
 
 # def delete_data(container_name, blob_name):
@@ -74,14 +84,14 @@ def put_data(
 # Example usage
 if __name__ == "__main__":
     # create_container(1, "my_container")
-    put_data(
-        1,
-        "test_container",
-        "requirements.txt",
-        "/Users/suraj/learnings/blob-store/blobstore/client/requirements.txt",
-        50000000,
-    )
-    # get_data("my_container", "my_blob")
+    # put_data(
+    #     1,
+    #     "test_container",
+    #     "requirements.txt",
+    #     "/Users/suraj/learnings/blob-store/blobstore/client/requirements.txt",
+    #     50000000,
+    # )
+    get_data(1, "test_container", "requirements.txt")
     # list_blobs("my_container")
     # delete_data("my_container", "my_blob")
     # delete_container("my_container")

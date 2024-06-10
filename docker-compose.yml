@@ -44,7 +44,7 @@ services:
       - "9001:9001"
     volumes:
       - data_node1_storage:/data
-
+  # data_node2 is not listening on it's port, look into this.
   data_node2:
     build: ./data_node
     ports:

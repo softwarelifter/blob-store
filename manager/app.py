@@ -151,7 +151,6 @@ def initialize_upload():
         container_id = cur.fetchone()
         if not container_id:
             return jsonify({"error": "Container not found"}), 404
-        container_id = container_id[0]
 
         # Execute the query to fetch all data node names
         cur.execute("SELECT name FROM data_nodes")
@@ -166,8 +165,8 @@ def initialize_upload():
 
         # Update metadata storage
         cur.execute(
-            "INSERT INTO blobs (blob_id, container_id, name, blob_size) VALUES (%s, %s, %s, %s)",
-            (blob_id, container_id, blob_name, blob_size),
+            "INSERT INTO blobs (blob_id, container_name, blob_name, blob_size) VALUES (%s, %s, %s, %s)",
+            (blob_id, container_name, blob_name, blob_size),
         )
 
         for chunk_id, info in chunk_info.items():
@@ -183,7 +182,6 @@ def initialize_upload():
             jsonify(
                 {
                     "blob_id": blob_id,
-                    "container_id": container_id,
                     "chunk_info": chunk_info,
                 }
             ),
@@ -211,16 +209,57 @@ def finalize_upload():
     except Exception as e:
         connection.rollback()
         return jsonify({"error": str(e)}), 500
-    finally:
-        connection.close()
+    # finally:
+    # connection.close()
 
 
-# @app.route("/get_data", methods=["GET"])
-# def get_data():
-#     container_name = request.args.get("container")
-#     blob_name = request.args.get("blob")
-#     # Logic to retrieve blob data from data nodes
-#     return jsonify({"status": "success", "data": "blob_data_here"}), 200
+@app.route("/get_data", methods=["GET"])
+def get_data():
+
+    try:
+        user_id = request.args.get("user_id")
+        container_name = request.args.get("container")
+        blob_name = request.args.get("blob")
+        cur = connection.cursor()
+        cur.execute(
+            "SELECT b.blob_id, c.name, b.blob_name, b.blob_size, b.status FROM blobs b JOIN containers c ON b.container_name = c.name WHERE c.name = %s AND c.user_id=%s AND b.blob_name = %s",
+            (container_name, user_id, blob_name),
+        )
+        blob = cur.fetchone()
+        if not blob:
+            return jsonify({"error": "Blob not found"}), 404
+        blob_id, container_name, blob_name, blob_size, status = blob
+        cur.execute(
+            "SELECT chunk_id, chunk_size, primary_node, replicas FROM chunks WHERE blob_id = %s",
+            (blob_id,),
+        )
+        chunks = cur.fetchall()
+        chunk_info = {}
+        for chunk in chunks:
+            chunk_id, chunk_size, primary_node, replicas = chunk
+            chunk_info[chunk_id] = {
+                "chunk_size": chunk_size,
+                "primary_node": primary_node,
+                "replicas": replicas,
+            }
+        return (
+            jsonify(
+                {
+                    "blob_id": blob_id,
+                    "container_name": container_name,
+                    "blob_name": blob_name,
+                    "blob_size": blob_size,
+                    "status": status,
+                    "chunk_info": chunk_info,
+                }
+            ),
+            200,
+        )
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+    # finally:
+    # cur.close()
 
 
 # @app.route("/delete_data", methods=["DELETE"])
