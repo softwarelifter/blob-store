@@ -24,7 +24,8 @@ CREATE TABLE blobs (
     blob_id VARCHAR(255) UNIQUE NOT NULL,
     name VARCHAR(255) NOT NULL,
     container_id INTEGER REFERENCES containers(id),
-    blob_size INTEGER NOT NULL
+    blob_size INTEGER NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'uploading'
 );
 
 CREATE TABLE chunks (

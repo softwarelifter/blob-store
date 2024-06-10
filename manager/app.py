@@ -191,13 +191,19 @@ def initialize_upload():
 def finalize_upload():
     data = request.get_json()
     blob_id = data["blob_id"]
-
-    # Logic to finalize the upload and update metadata
-    cur = connection.cursor()
-    cur.execute("UPDATE blobs SET status = 'uploaded' WHERE blob_id = %s", (blob_id,))
-    connection.commit()
-
-    return jsonify({"status": "success"}), 200
+    try:
+        # Logic to finalize the upload and update metadata
+        cur = connection.cursor()
+        cur.execute(
+            "UPDATE blobs SET status = 'uploaded' WHERE blob_id = %s", (blob_id,)
+        )
+        connection.commit()
+        return jsonify({"status": "success"}), 200
+    except Exception as e:
+        connection.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        connection.close()
 
 
 # @app.route("/get_data", methods=["GET"])
