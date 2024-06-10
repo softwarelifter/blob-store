@@ -97,9 +97,6 @@ def create_container():
         connection.rollback()
         print(f"Error: {e}")
         return jsonify({"error": "An error occurred"}), 500
-    finally:
-        if "cur" in locals():
-            cur.close()  # Close the cursor to release resources
 
 
 def generate_blob_id():
@@ -190,8 +187,6 @@ def initialize_upload():
     except Exception as e:
         connection.rollback()
         return jsonify({"error": str(e)}), 500
-    finally:
-        cur.close()
 
 
 @app.route("/finalize_upload", methods=["POST"])
@@ -262,13 +257,26 @@ def get_data():
     # cur.close()
 
 
-# @app.route("/delete_data", methods=["DELETE"])
-# def delete_data():
-#     data = request.get_json()
-#     container_name = data["container_name"]
-#     blob_name = data["blob_name"]
-#     # Logic to delete blob data from data nodes and update metadata
-#     return jsonify({"status": "success"}), 200
+@app.route("/delete_data", methods=["DELETE"])
+def delete_data():
+    data = request.get_json()
+    container_name = data.get("container_name")
+    blob_name = data.get("blob_name")
+
+    if not container_name or not blob_name:
+        return jsonify({"error": "container_name and blob_name are required"}), 400
+
+    try:
+        with connection.cursor() as cur:
+            cur.execute(
+                "UPDATE blobs SET status='deleted' WHERE container_name = %s AND blob_name = %s",
+                (container_name, blob_name),
+            )
+        connection.commit()
+        return jsonify({"status": "success"}), 200
+    except Exception as e:
+        connection.rollback()
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/list_blobs", methods=["GET"])
@@ -288,12 +296,29 @@ def list_blobs():
         return jsonify({"error": str(e)}), 500
 
 
-# @app.route("/delete_container", methods=["DELETE"])
-# def delete_container():
-#     data = request.get_json()
-#     container_name = data["container_name"]
-#     # Logic to delete container and update metadata
-#     return jsonify({"status": "success"}), 200
+@app.route("/delete_container", methods=["DELETE"])
+def delete_container():
+    data = request.get_json()
+    container_name = data.get("container_name")  # Use get to avoid KeyError
+
+    if not container_name:
+        return jsonify({"error": "container_name is required"}), 400
+
+    try:
+        with connection.cursor() as cur:
+            cur.execute(
+                "UPDATE blobs SET status='deleted' WHERE container_name = %s",
+                (container_name,),
+            )
+            cur.execute(
+                "UPDATE containers SET status='deleted' WHERE name = %s",
+                (container_name,),
+            )
+        connection.commit()
+        return jsonify({"status": "success"}), 200
+    except Exception as e:
+        connection.rollback()
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/list_containers", methods=["GET"])

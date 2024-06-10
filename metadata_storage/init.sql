@@ -11,7 +11,8 @@ CREATE TABLE users (
 CREATE TABLE containers (
     id SERIAL PRIMARY KEY,
     name VARCHAR(50) UNIQUE NOT NULL,
-    user_id INTEGER REFERENCES users(id)
+    user_id INTEGER REFERENCES users(id),
+    status VARCHAR(50) NOT NULL DEFAULT 'active'
 );
 
 CREATE TABLE data_nodes (

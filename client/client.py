@@ -54,12 +54,12 @@ def get_data(user_id, container_name, blob_name):
     # print(response.json())
 
 
-# def delete_data(container_name, blob_name):
-#     response = requests.delete(
-#         "http://localhost/delete_data",
-#         json={"container_name": container_name, "blob_name": blob_name},
-#     )
-#     print(response.json())
+def delete_data(container_name, blob_name):
+    response = requests.delete(
+        "http://localhost:8080/delete_data",
+        json={"container_name": container_name, "blob_name": blob_name},
+    )
+    print(response.json())
 
 
 def list_blobs(user_id, container_name):
@@ -70,11 +70,12 @@ def list_blobs(user_id, container_name):
     print(response.json())
 
 
-# def delete_container(container_name):
-#     response = requests.delete(
-#         "http://localhost/delete_container", json={"container_name": container_name}
-#     )
-#     print(response.json())
+def delete_container(container_name):
+    response = requests.delete(
+        "http://localhost:8080/delete_container",
+        json={"container_name": container_name},
+    )
+    print(response.json())
 
 
 def list_containers(user_id):
@@ -97,6 +98,6 @@ if __name__ == "__main__":
     # )
     # get_data(1, "test_container", "requirements.txt")
     # list_blobs(1, "test_container")
-    # delete_data("my_container", "my_blob")
-    # delete_container("my_container")
-    list_containers(1)
+    delete_data("test_container", "requirements.txt")
+    # delete_container("images")
+    # list_containers(1)
