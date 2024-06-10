@@ -286,7 +286,7 @@ def list_blobs():
     try:
         cur = connection.cursor()
         cur.execute(
-            "SELECT b.blob_id, c.name, b.blob_name, b.blob_size, b.status FROM blobs b JOIN containers c ON b.container_name = c.name WHERE c.name = %s AND c.user_id=%s",
+            "SELECT b.blob_id, c.name, b.blob_name, b.blob_size, b.status FROM blobs b JOIN containers c ON b.container_name = c.name WHERE c.status != 'deleted' AND b.status !='deleted' AND c.name = %s AND c.user_id=%s",
             (container_name, user_id),
         )
         blobs = cur.fetchone()
@@ -330,7 +330,7 @@ def list_containers():
     try:
         cur = connection.cursor()
         cur.execute(
-            "SELECT * FROM containers WHERE user_id = %s",
+            "SELECT * FROM containers WHERE status != 'deleted' AND user_id = %s",
             (user_id,),
         )
         containers = cur.fetchall()  # Use fetchall to get all matching rows

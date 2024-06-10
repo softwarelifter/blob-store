@@ -97,7 +97,7 @@ if __name__ == "__main__":
     #     50000000,
     # )
     # get_data(1, "test_container", "requirements.txt")
-    # list_blobs(1, "test_container")
-    delete_data("test_container", "requirements.txt")
+    list_blobs(1, "test_container")
+    # delete_data("test_container", "requirements.txt")
     # delete_container("images")
     # list_containers(1)
