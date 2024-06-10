@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 import psycopg2
 import os
 import time
+import uuid
 from hashlib import sha256
 from heartbeat import Heartbeat
 import traceback
@@ -77,9 +78,6 @@ def login():
         )
 
 
-from flask import request, jsonify
-
-
 @app.route("/create_container", methods=["POST"])
 def create_container():
     try:
@@ -104,29 +102,102 @@ def create_container():
             cur.close()  # Close the cursor to release resources
 
 
-# @app.route("/create_container", methods=["POST"])
-# def create_container():
-#     data = request.get_json()
-#     user_id = data["user_id"]
-#     container_name = data["container_name"]
-#     print(f"Creating container {container_name} for user {user_id}")
-#     cur = connection.cursor()
-#     cur.execute(
-#         "INSERT INTO containers (name, user_id) VALUES (%s, %s)",
-#         (container_name, user_id),
-#     )
-#     connection.commit()
-#     return jsonify({"status": "success"}), 201
+def generate_blob_id():
+    return str(uuid.uuid4())
 
 
-# @app.route("/put_data", methods=["POST"])
-# def put_data():
-#     data = request.get_json()
-#     container_name = data["container_name"]
-#     blob_name = data["blob_name"]
-#     blob_data = data["blob_data"]
-#     # Logic to store blob data in data nodes and update metadata
-#     return jsonify({"status": "success"}), 200
+DEFAULT_CHUNK_SIZE = 1024 * 1024
+DEFAULT_REPLICATION_FACTOR = 3
+
+
+def split_blob(blob_size, chunk_size=DEFAULT_CHUNK_SIZE):
+    num_chunks = -(-blob_size // chunk_size)  # Ceiling division
+    return num_chunks
+
+
+def allocate_data_nodes(
+    num_chunks, data_nodes, replication_factor=DEFAULT_REPLICATION_FACTOR
+):
+    chunk_info = {}
+    for i in range(num_chunks):
+        primary_node = data_nodes[i % len(data_nodes)]
+        replicas = [
+            data_nodes[(i + j) % len(data_nodes)] for j in range(1, replication_factor)
+        ]
+        chunk_info[i] = {"data_node": primary_node, "replicas": replicas}
+    return chunk_info
+
+
+@app.route("/initialize_upload", methods=["POST"])
+def initialize_upload():
+    data = request.get_json()
+    user_id = data["user_id"]
+    container_name = data["container_name"]
+    blob_name = data["blob_name"]
+    blob_size = int(data["blob_size"])
+    chunk_size = int(data.get("chunk_size", DEFAULT_CHUNK_SIZE))
+
+    blob_id = generate_blob_id()
+    num_chunks = split_blob(blob_size, chunk_size)
+
+    cur = connection.cursor()
+
+    try:
+        # Get container_id
+        cur.execute(
+            "SELECT id FROM containers WHERE name = %s AND user_id = %s",
+            (container_name, user_id),
+        )
+        container_id = cur.fetchone()
+        if not container_id:
+            return jsonify({"error": "Container not found"}), 404
+        container_id = container_id[0]
+
+        # Execute the query to fetch all data node names
+        cur.execute("SELECT name FROM data_nodes")
+        data_node_names = cur.fetchall()
+        if not data_node_names:
+            return jsonify({"error": "No data nodes available"}), 500
+
+        # Extract names from tuples
+        data_nodes = [row[0] for row in data_node_names]
+
+        chunk_info = allocate_data_nodes(num_chunks, data_nodes)
+
+        # Update metadata storage
+        cur.execute(
+            "INSERT INTO blobs (blob_id, container_id, blob_name, blob_size) VALUES (%s, %s, %s, %s)",
+            (blob_id, container_id, blob_name, blob_size),
+        )
+
+        for chunk_id, info in chunk_info.items():
+            primary_node = info["data_node"]
+            replicas = ",".join(info["replicas"])
+            cur.execute(
+                "INSERT INTO chunks (blob_id, chunk_id, chunk_size, primary_node, replicas) VALUES (%s, %s, %s, %s, %s)",
+                (blob_id, chunk_id, chunk_size, primary_node, replicas),
+            )
+
+        connection.commit()
+        return jsonify({"blob_id": blob_id, "chunk_info": chunk_info}), 200
+    except Exception as e:
+        connection.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+
+
+@app.route("/finalize_upload", methods=["POST"])
+def finalize_upload():
+    data = request.get_json()
+    blob_id = data["blob_id"]
+
+    # Logic to finalize the upload and update metadata
+    cur = connection.cursor()
+    cur.execute("UPDATE blobs SET status = 'uploaded' WHERE blob_id = %s", (blob_id,))
+    connection.commit()
+
+    return jsonify({"status": "success"}), 200
 
 
 # @app.route("/get_data", methods=["GET"])
