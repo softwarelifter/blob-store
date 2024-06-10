@@ -155,9 +155,11 @@ def delete_data():
 
 @app.route("/list_blobs", methods=["GET"])
 def list_blobs():
+    user_id = request.args.get("user_id")
     container = request.args.get("container")
     response = requests.get(
-        f"http://{MANAGER_HOST}/list_blobs", params={"container": container}
+        f"http://{MANAGER_HOST}/list_blobs",
+        params={"container": container, "user_id": user_id},
     )
     return jsonify(response.json()), response.status_code
 
@@ -171,7 +173,11 @@ def delete_container():
 
 @app.route("/list_containers", methods=["GET"])
 def list_containers():
-    response = requests.get(f"http://{MANAGER_HOST}/list_containers")
+    user_id = request.args.get("user_id")
+    response = requests.get(
+        f"http://{MANAGER_HOST}/list_containers",
+        params={"user_id": user_id},
+    )
     return jsonify(response.json()), response.status_code
 
 

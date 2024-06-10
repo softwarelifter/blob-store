@@ -62,11 +62,12 @@ def get_data(user_id, container_name, blob_name):
 #     print(response.json())
 
 
-# def list_blobs(container_name):
-#     response = requests.get(
-#         "http://localhost/list_blobs", params={"container": container_name}
-#     )
-#     print(response.json())
+def list_blobs(user_id, container_name):
+    response = requests.get(
+        "http://localhost:8080/list_blobs",
+        params={"container": container_name, "user_id": user_id},
+    )
+    print(response.json())
 
 
 # def delete_container(container_name):
@@ -76,9 +77,12 @@ def get_data(user_id, container_name, blob_name):
 #     print(response.json())
 
 
-# def list_containers():
-#     response = requests.get("http://localhost/list_containers")
-#     print(response.json())
+def list_containers(user_id):
+    response = requests.get(
+        "http://localhost:8080/list_containers",
+        params={"user_id": user_id},
+    )
+    print(response.json())
 
 
 # Example usage
@@ -91,8 +95,8 @@ if __name__ == "__main__":
     #     "/Users/suraj/learnings/blob-store/blobstore/client/requirements.txt",
     #     50000000,
     # )
-    get_data(1, "test_container", "requirements.txt")
-    # list_blobs("my_container")
+    # get_data(1, "test_container", "requirements.txt")
+    # list_blobs(1, "test_container")
     # delete_data("my_container", "my_blob")
     # delete_container("my_container")
-    # list_containers()
+    list_containers(1)

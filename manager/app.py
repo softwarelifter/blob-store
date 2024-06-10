@@ -271,11 +271,21 @@ def get_data():
 #     return jsonify({"status": "success"}), 200
 
 
-# @app.route("/list_blobs", methods=["GET"])
-# def list_blobs():
-#     container_name = request.args.get("container")
-#     # Logic to list all blobs in the container
-#     return jsonify({"blobs": []}), 200
+@app.route("/list_blobs", methods=["GET"])
+def list_blobs():
+    user_id = request.args.get("user_id")
+    container_name = request.args.get("container")
+    try:
+        cur = connection.cursor()
+        cur.execute(
+            "SELECT b.blob_id, c.name, b.blob_name, b.blob_size, b.status FROM blobs b JOIN containers c ON b.container_name = c.name WHERE c.name = %s AND c.user_id=%s",
+            (container_name, user_id),
+        )
+        blobs = cur.fetchone()
+        return jsonify({"blobs": blobs}), 200
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 
 # @app.route("/delete_container", methods=["DELETE"])
@@ -286,10 +296,29 @@ def get_data():
 #     return jsonify({"status": "success"}), 200
 
 
-# @app.route("/list_containers", methods=["GET"])
-# def list_containers():
-#     # Logic to list all containers for a user
-#     return jsonify({"containers": []}), 200
+@app.route("/list_containers", methods=["GET"])
+def list_containers():
+    user_id = request.args.get("user_id")
+    if not user_id:
+        return jsonify({"error": "user_id is required"}), 400
+
+    try:
+        cur = connection.cursor()
+        cur.execute(
+            "SELECT * FROM containers WHERE user_id = %s",
+            (user_id,),
+        )
+        containers = cur.fetchall()  # Use fetchall to get all matching rows
+
+        cur.close()  # Close the cursor after use
+
+        if not containers:
+            return jsonify({"containers": []}), 200
+        return jsonify({"containers": containers}), 200
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":
