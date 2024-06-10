@@ -166,20 +166,29 @@ def initialize_upload():
 
         # Update metadata storage
         cur.execute(
-            "INSERT INTO blobs (blob_id, container_id, blob_name, blob_size) VALUES (%s, %s, %s, %s)",
+            "INSERT INTO blobs (blob_id, container_id, name, blob_size) VALUES (%s, %s, %s, %s)",
             (blob_id, container_id, blob_name, blob_size),
         )
 
         for chunk_id, info in chunk_info.items():
             primary_node = info["data_node"]
-            replicas = ",".join(info["replicas"])
+            replicas = info["replicas"]
             cur.execute(
                 "INSERT INTO chunks (blob_id, chunk_id, chunk_size, primary_node, replicas) VALUES (%s, %s, %s, %s, %s)",
                 (blob_id, chunk_id, chunk_size, primary_node, replicas),
             )
 
         connection.commit()
-        return jsonify({"blob_id": blob_id, "chunk_info": chunk_info}), 200
+        return (
+            jsonify(
+                {
+                    "blob_id": blob_id,
+                    "container_id": container_id,
+                    "chunk_info": chunk_info,
+                }
+            ),
+            200,
+        )
     except Exception as e:
         connection.rollback()
         return jsonify({"error": str(e)}), 500

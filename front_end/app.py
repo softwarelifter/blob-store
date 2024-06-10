@@ -64,8 +64,10 @@ def put_data():
         data_node_response = requests.post(
             f"http://{data_node}/store_blob",
             files={
-                "blob_name": (None, f"{user_id}_{container_id}_{blob_name}_{chunk_id}"),
-                "blob_data": (None, chunk_data),
+                f"{user_id}_{container_id}_{blob_name}_{chunk_id}": (
+                    f"{blob_name}_{chunk_id}",
+                    chunk_data,
+                )
             },
         )
 

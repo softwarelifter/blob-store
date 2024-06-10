@@ -9,12 +9,14 @@ def create_container(user_id, container_name):
     print(response.json())
 
 
-def put_data(container_name, blob_name, blob_size, chunk_size=1024 * 1024):
+def put_data(
+    user_id, container_name, blob_name, blob_path, blob_size, chunk_size=1024 * 1024
+):
     files = {}
     num_chunks = -(-blob_size // chunk_size)
 
     # Open the file and read it in chunks
-    with open(blob_name, "rb") as f:
+    with open(blob_path, "rb") as f:
         for i in range(num_chunks):
             chunk_data = f.read(chunk_size)
             files[f"chunk_{i}"] = (f"{blob_name}_{i}", chunk_data)
@@ -22,6 +24,7 @@ def put_data(container_name, blob_name, blob_size, chunk_size=1024 * 1024):
     response = requests.post(
         "http://localhost:8080/put_data",
         data={
+            "user_id": user_id,
             "container_name": container_name,
             "blob_name": blob_name,
             "blob_size": blob_size,
@@ -72,7 +75,9 @@ def put_data(container_name, blob_name, blob_size, chunk_size=1024 * 1024):
 if __name__ == "__main__":
     # create_container(1, "my_container")
     put_data(
+        1,
         "test_container",
+        "requirements.txt",
         "/Users/suraj/learnings/blob-store/blobstore/client/requirements.txt",
         50000000,
     )

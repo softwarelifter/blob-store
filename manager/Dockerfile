@@ -14,8 +14,7 @@ RUN apt-get update && apt-get install -y \
 COPY . /app
 
 # Install Python dependencies
-RUN pip install --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
 # Make port 8090 available to the world outside this container
 EXPOSE 8090

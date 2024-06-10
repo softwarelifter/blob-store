@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import os
 from chunk_manager import ChunkManager
+import traceback
 
 app = Flask(__name__)
 chunk_manager = ChunkManager()
@@ -8,10 +9,16 @@ chunk_manager = ChunkManager()
 
 @app.route("/store_blob", methods=["POST"])
 def store_blob():
-    data = request.get_json()
-    blob_name = data["blob_name"]
-    blob_data = data["blob_data"]
-    chunk_manager.store_blob(blob_name, blob_data)
+    try:
+        for key, value in request.files.items():
+            print("Request received")
+            blob_name = key
+            blob_data = value.read()
+            print("data loaded")
+            chunk_manager.store_blob(blob_name, blob_data)
+    except Exception:
+        traceback.print_exc()
+        return jsonify({"status": "failure"}), 500
     return jsonify({"status": "success"}), 201
 
 
