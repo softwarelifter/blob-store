@@ -225,10 +225,10 @@ def get_data():
     return jsonify(blob_reponse), response.status_code
 
 
-@app.route("/delete_data", methods=["DELETE"])
-def delete_data():
-    data = request.get_json()
-    response = requests.delete(f"http://{MANAGER_HOST}/delete_data", json=data)
+@app.route("/delete-blob", methods=["DELETE"])
+def delete_blob():
+    data = request.args
+    response = requests.delete(f"http://{MANAGER_HOST}/delete_data", params=data)
     return jsonify(response.json()), response.status_code
 
 

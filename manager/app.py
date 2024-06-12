@@ -262,7 +262,7 @@ def get_data():
 
 @app.route("/delete_data", methods=["DELETE"])
 def delete_data():
-    data = request.get_json()
+    data = request.args
     container_name = data.get("container_name")
     blob_name = data.get("blob_name")
 

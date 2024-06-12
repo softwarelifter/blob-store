@@ -25,7 +25,7 @@ async function handleFileActions(event) {
     if (action === "download") {
       await downloadFile(row);
     } else if (action === "delete") {
-      await deleteFile();
+      await deleteFile(row);
     }
   }
 }
@@ -236,4 +236,27 @@ async function downloadFile(row) {
   a.download = fileName;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+async function deleteFile(row) {
+  const containerName = containerElement.value;
+  const fileName = row.children[0].textContent;
+  console.log("delete file", fileName);
+  if (!containerName) {
+    alert("Please select a container.");
+    return;
+  }
+
+  const response = await fetch(
+    `${BASE_URL}/delete-blob?user_id=${userId}&container_name=${containerName}&blob_name=${fileName}`,
+    {
+      method: "DELETE",
+    }
+  );
+  if (!response.ok) {
+    throw new Error(`HTTP error! Status: ${response.status}`);
+  }
+
+  await response.json();
+  await fetchFiles();
 }
