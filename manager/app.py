@@ -94,6 +94,7 @@ def create_container():
         return jsonify({"status": "success"}), 201
     except Exception as e:
         # Rollback the transaction if an error occurs
+        traceback.print_exc()
         connection.rollback()
         print(f"Error: {e}")
         return jsonify({"error": "An error occurred"}), 500
@@ -339,6 +340,15 @@ def list_containers():
 
         if not containers:
             return jsonify({"containers": []}), 200
+        containers = [
+            {
+                "id": container[0],
+                "name": container[1],
+                "user_id": container[2],
+                "status": container[3],
+            }
+            for container in containers
+        ]
         return jsonify({"containers": containers}), 200
 
     except Exception as e:
@@ -348,6 +358,6 @@ def list_containers():
 
 if __name__ == "__main__":
     print("starting manager2")
-    heartbeat = Heartbeat()
-    heartbeat.start()
+    # heartbeat = Heartbeat()
+    # heartbeat.start()
     app.run(host="0.0.0.0", port=8090)

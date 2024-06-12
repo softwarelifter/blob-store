@@ -102,8 +102,8 @@ if __name__ == "__main__":
     #     "requirements1.txt",
     #     "/Users/suraj/learnings/blob-store/blobstore/suraj1.jpg",
     # )
-    get_data(1, "test_container", "requirements1.txt")
-    # list_blobs(1, "test_container")
+    # get_data(1, "test_container", "requirements1.txt")
+    list_blobs(1, "test_container")
     # delete_data("test_container", "requirements.txt")
     # delete_container("images")
     # list_containers(1)
