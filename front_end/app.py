@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 import requests
 import os
@@ -158,6 +158,39 @@ def put_data():
         jsonify({"status": "success", "blob_path": f"{container_name}/{blob_name}"}),
         200,
     )
+
+
+@app.route("/download", methods=["GET"])
+def download_blob():
+    user_id = request.args.get("user_id")
+    container = request.args.get("container")
+    blob = request.args.get("blob")
+    response = requests.get(
+        f"http://{MANAGER_HOST}/get_data",
+        params={"container": container, "blob": blob, "user_id": user_id},
+    )
+    if response.status_code != 200:
+        return jsonify(response.json()), response.status_code
+
+    blob_data = response.json()
+
+    def generate():
+        for chunk_id, chunk_info in blob_data["chunk_info"].items():
+            storage_blob_name = generate_chunk_name(blob_data["blob_id"], chunk_id)
+            primary_node = chunk_info["primary_node"]
+            chunk_response = requests.get(
+                f"http://{primary_node}/retrieve_blob",
+                params={"blob_name": storage_blob_name},
+            )
+            if chunk_response.status_code != 200:
+                yield None
+            yield chunk_response.json().get("blob_data")
+
+    response = Response(generate(), content_type="application/octet-stream")
+    response.headers["Content-Disposition"] = 'attachment; filename="{}"'.format(
+        blob_data["blob_name"]
+    )
+    return response
 
 
 @app.route("/get_data", methods=["GET"])

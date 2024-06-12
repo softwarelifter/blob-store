@@ -4,64 +4,43 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Upload Example</title>
-    <style>
-      .container-div {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        margin-top: 20px;
-      }
-
-      .container-dropdown {
-        width: 200px;
-        height: 30px;
-        margin-right: 10px;
-      }
-
-      .container-name-input {
-        width: 200px;
-        height: 30px;
-        margin-right: 10px;
-      }
-
-      .create-container-btn {
-        width: 200px;
-        height: 30px;
-        background-color: #4caf50;
-        color: white;
-        border: none;
-        cursor: pointer;
-        border-radius: 10px;
-      }
-
-      .create-container-btn:hover {
-        background-color: #45a049;
-      }
-      .upload-div {
-        margin-top: 20px;
-      }
-    </style>
+    <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="container-div">
-      <div>
+    <div class="flex-div">
+      <div class="flex-div">
         <select id="container" class="container-dropdown"></select>
         <!-- <input
-        type="text"
-        id="container-name"
-        class="container-name-input"
-        placeholder="Container Name"
-      /> -->
+          type="text"
+          id="container-name"
+          class="container-name-input"
+          placeholder="Container Name"
+        /> -->
         <button id="create-container" class="create-container-btn">
           create container
         </button>
       </div>
-      <div class="upload-div">
+      <div class="upload-div flex-div">
         <input type="file" id="fileInput" />
         <button onclick="uploadFile()">Upload</button>
       </div>
+
+      <div id="status"></div>
     </div>
-    <div id="status"></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>File Name</th>
+          <th>Size</th>
+          <th>Created At</th>
+          <th>Download</th>
+          <th>Delete</th>
+        </tr>
+      </thead>
+      <tbody id="files-list"></tbody>
+    </table>
+
     <script src="script2.js"></script>
   </body>
 </html>

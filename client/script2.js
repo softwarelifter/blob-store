@@ -8,10 +8,27 @@ const userId = 1;
 
 document.addEventListener("DOMContentLoaded", async () => {
   await fetchAndPopulateContainers();
+  await fetchFiles();
   createContainerBtn.addEventListener("click", async () => {
     await createContainer();
   });
+  document
+    .getElementById("files-list")
+    .addEventListener("click", handleFileActions);
 });
+
+async function handleFileActions(event) {
+  const target = event.target;
+  const row = target.closest("tr");
+  if (target.tagName === "BUTTON") {
+    const action = target.textContent.toLowerCase();
+    if (action === "download") {
+      await downloadFile(row);
+    } else if (action === "delete") {
+      await deleteFile();
+    }
+  }
+}
 
 async function fetchAndPopulateContainers() {
   const containers = await listContainers();
@@ -150,4 +167,73 @@ async function uploadFile() {
   });
 
   document.getElementById("status").textContent = "Upload complete!";
+}
+
+async function fetchFiles() {
+  const containerName = containerElement.value;
+  if (!containerName) {
+    alert("Please select a container.");
+    return;
+  }
+
+  const response = await fetch(
+    `${BASE_URL}/list_blobs?user_id=${userId}&container=${containerName}`
+  );
+  if (!response.ok) {
+    throw new Error(`HTTP error! Status: ${response.status}`);
+  }
+
+  const files = await response.json();
+  console.log(files);
+  const filesList = document.getElementById("files-list");
+  filesList.innerHTML = "";
+  files.blobs.forEach((file) => {
+    const tr = document.createElement("tr");
+    const fileNameTd = document.createElement("td");
+    const fileSizeTd = document.createElement("td");
+    const fileCreatedTd = document.createElement("td");
+    const fileDownloadBtnTd = document.createElement("td");
+    const fileDeleteBtnTd = document.createElement("td");
+    const fileDownloadBtn = document.createElement("button");
+    fileDownloadBtn.textContent = "Download";
+    const fileDeleteBtn = document.createElement("button");
+    fileDeleteBtnTd.appendChild(fileDeleteBtn);
+    fileDeleteBtn.textContent = "Delete";
+    fileDownloadBtnTd.appendChild(fileDownloadBtn);
+
+    fileNameTd.textContent = file.blob_name;
+    fileSizeTd.textContent = file.blob_size;
+    fileCreatedTd.textContent = new Date().toLocaleString();
+    tr.appendChild(fileNameTd);
+    tr.appendChild(fileSizeTd);
+    tr.appendChild(fileCreatedTd);
+    tr.appendChild(fileDownloadBtnTd);
+    tr.appendChild(fileDeleteBtnTd);
+    filesList.appendChild(tr);
+  });
+}
+
+async function downloadFile(row) {
+  const containerName = containerElement.value;
+  const fileName = row.children[0].textContent;
+  console.log("download file", fileName);
+  if (!containerName) {
+    alert("Please select a container.");
+    return;
+  }
+
+  const response = await fetch(
+    `${BASE_URL}/download?user_id=${userId}&container=${containerName}&blob=${fileName}`
+  );
+  if (!response.ok) {
+    throw new Error(`HTTP error! Status: ${response.status}`);
+  }
+
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  a.click();
+  URL.revokeObjectURL(url);
 }

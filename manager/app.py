@@ -292,7 +292,19 @@ def list_blobs():
             "SELECT b.blob_id, c.name, b.blob_name, b.blob_size, b.status FROM blobs b JOIN containers c ON b.container_name = c.name WHERE c.status != 'deleted' AND b.status !='deleted' AND c.name = %s AND c.user_id=%s",
             (container_name, user_id),
         )
-        blobs = cur.fetchone()
+        blobs = cur.fetchall()
+        if not blobs:
+            return jsonify({"blobs": []}), 200
+        blobs = [
+            {
+                "blob_id": blob[0],
+                "container_name": blob[1],
+                "blob_name": blob[2],
+                "blob_size": blob[3],
+                "status": blob[4],
+            }
+            for blob in blobs
+        ]
         return jsonify({"blobs": blobs}), 200
     except Exception as e:
         traceback.print_exc()
