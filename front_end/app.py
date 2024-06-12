@@ -35,6 +35,49 @@ def generate_blob_name(user_id, container_name, blob_name, chunk_id):
     return f"{chunk_id}_{user_id}_{container_name}_{blob_name}"
 
 
+def generate_chunk_name(upload_id, part_number):
+    return f"{upload_id}_{part_number}"
+
+
+@app.route("/initiate-upload", methods=["POST"])
+def initiate_upload():
+    data = request.get_json()
+    response = requests.post(f"http://{MANAGER_HOST}/initiate_upload", json=data)
+    return jsonify(response.json()), response.status_code
+
+
+@app.route("/upload-part", methods=["POST"])
+def upload_part():
+    upload_id = request.form.get("upload_id")
+    part_number = request.form.get("part_number")
+    data_node = request.form.get("data_node")
+    chunk = request.form.get("file")
+    chunk_name = generate_chunk_name(upload_id, part_number)
+    print(chunk)
+    # Store the primary chunk
+    data_node_response = requests.post(
+        f"http://{data_node}/store_blob",
+        files={
+            chunk_name: (
+                chunk_name,
+                chunk,
+            )
+        },
+    )
+
+    if data_node_response.status_code != 201:
+        return jsonify({"status": "failure", "error": "Failed to store chunk"}), 500
+
+    return jsonify({"status": "success"}), 200
+
+
+@app.route("/complete-upload", methods=["POST"])
+def complete_upload():
+    data = request.get_json()
+    response = requests.post(f"http://{MANAGER_HOST}/complete-upload", json=data)
+    return jsonify(response.json()), response.status_code
+
+
 @app.route("/put_data", methods=["POST"])
 def put_data():
     user_id = request.form.get("user_id")

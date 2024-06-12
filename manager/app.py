@@ -122,25 +122,27 @@ def allocate_data_nodes(
         replicas = [
             data_nodes[(i + j) % len(data_nodes)] for j in range(1, replication_factor)
         ]
-        chunk_info[i] = {"data_node": primary_node, "replicas": replicas}
+        # not replicating for now
+        chunk_info[i] = {"data_node": primary_node, "replicas": []}
     return chunk_info
 
 
-@app.route("/initialize_upload", methods=["POST"])
-def initialize_upload():
-    data = request.get_json()
-    user_id = data["user_id"]
-    container_name = data["container_name"]
-    blob_name = data["blob_name"]
-    blob_size = int(data["blob_size"])
-    chunk_size = int(data.get("chunk_size", DEFAULT_CHUNK_SIZE))
-
-    blob_id = generate_blob_id()
-    num_chunks = split_blob(blob_size, chunk_size)
-
-    cur = connection.cursor()
+@app.route("/initiate_upload", methods=["POST"])
+def initiate_upload():
 
     try:
+        data = request.get_json()
+        user_id = data["user_id"]
+        container_name = data["container_name"]
+        chunk_size = int(data.get("chunk_size", DEFAULT_CHUNK_SIZE))
+
+        blob_name = data["file_name"]
+        blob_size = int(data["file_size"])
+
+        blob_id = generate_blob_id()
+        num_chunks = split_blob(blob_size, chunk_size)
+
+        cur = connection.cursor()
         # Get container_id
         cur.execute(
             "SELECT id FROM containers WHERE name = %s AND user_id = %s",
@@ -190,11 +192,11 @@ def initialize_upload():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/finalize_upload", methods=["POST"])
-def finalize_upload():
-    data = request.get_json()
-    blob_id = data["blob_id"]
+@app.route("/complete-upload", methods=["POST"])
+def complete_upload():
     try:
+        data = request.get_json()
+        blob_id = data["blob_id"]
         # Logic to finalize the upload and update metadata
         cur = connection.cursor()
         cur.execute(

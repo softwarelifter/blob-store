@@ -7,8 +7,8 @@
     <style>
       .container-div {
         display: flex;
+        flex-direction: column;
         justify-content: center;
-        align-items: center;
         margin-top: 20px;
       }
 
@@ -31,28 +31,36 @@
         color: white;
         border: none;
         cursor: pointer;
+        border-radius: 10px;
       }
 
       .create-container-btn:hover {
         background-color: #45a049;
       }
+      .upload-div {
+        margin-top: 20px;
+      }
     </style>
   </head>
   <body>
     <div class="container-div">
-      <select id="container" class="container-dropdown"></select>
-      <!-- <input
+      <div>
+        <select id="container" class="container-dropdown"></select>
+        <!-- <input
         type="text"
         id="container-name"
         class="container-name-input"
         placeholder="Container Name"
       /> -->
-      <button id="create-container" class="create-container-btn">
-        create container
-      </button>
+        <button id="create-container" class="create-container-btn">
+          create container
+        </button>
+      </div>
+      <div class="upload-div">
+        <input type="file" id="fileInput" />
+        <button onclick="uploadFile()">Upload</button>
+      </div>
     </div>
-    <input type="file" id="fileInput" />
-    <button onclick="uploadFile()">Upload</button>
     <div id="status"></div>
     <script src="script2.js"></script>
   </body>

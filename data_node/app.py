@@ -12,10 +12,9 @@ chunk_manager = ChunkManager()
 def store_blob():
     try:
         for key, value in request.files.items():
-            print("Request received")
             blob_name = key
             blob_data = value.read()
-            print("data loaded")
+            print(blob_data)
             chunk_manager.store_blob(blob_name, blob_data)
     except Exception:
         traceback.print_exc()
