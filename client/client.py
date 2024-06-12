@@ -1,4 +1,6 @@
+import os
 import requests
+import base64
 
 
 def create_container(user_id, container_name):
@@ -9,10 +11,11 @@ def create_container(user_id, container_name):
     print(response.json())
 
 
-def put_data(
-    user_id, container_name, blob_name, blob_path, blob_size, chunk_size=1024 * 1024
-):
+def put_data(user_id, container_name, blob_name, blob_path, chunk_size=1024 * 1024):
     files = {}
+
+    # Get the blob size from the file
+    blob_size = os.path.getsize(blob_path)
     num_chunks = -(-blob_size // chunk_size)
 
     # Open the file and read it in chunks
@@ -36,21 +39,25 @@ def put_data(
     print(response.json())
 
 
+def reconstruct_file(response, output_file_path):
+    with open(output_file_path, "wb") as output_file:
+        for chunk_id, data in response.json().items():
+            # Retrieve each chunk as base64
+            base64_chunk = data["blob_data"]
+            # Decode the base64 chunk to bytes
+            chunk_data = base64.b64decode(base64_chunk)
+            # Write the bytes to the output file
+            output_file.write(chunk_data)
+
+
 def get_data(user_id, container_name, blob_name):
     response = requests.get(
         "http://localhost:8080/get_data",
         params={"container": container_name, "blob": blob_name, "user_id": user_id},
     )
     if response.status_code != 200:
-        return jsonify({"status": "failure", "error": response.json()}), 500
-    # print(response.json())
-    with open(blob_name, "wb") as f:
-        for chunk_id, data in response.json().items():
-            # Ensure `data["blob_data"]` is a string and then encode it to bytes
-            blob_data = data["blob_data"]
-            if isinstance(blob_data, str):
-                blob_data = blob_data.encode("utf-8")
-            f.write(blob_data)
+        return print(response)
+    reconstruct_file(response, f"reconstructed_{blob_name}")
     # print(response.json())
 
 
@@ -92,12 +99,11 @@ if __name__ == "__main__":
     # put_data(
     #     1,
     #     "test_container",
-    #     "requirements.txt",
-    #     "/Users/suraj/learnings/blob-store/blobstore/client/requirements.txt",
-    #     50000000,
+    #     "requirements1.txt",
+    #     "/Users/suraj/learnings/blob-store/blobstore/suraj1.jpg",
     # )
-    # get_data(1, "test_container", "requirements.txt")
-    list_blobs(1, "test_container")
+    get_data(1, "test_container", "requirements1.txt")
+    # list_blobs(1, "test_container")
     # delete_data("test_container", "requirements.txt")
     # delete_container("images")
     # list_containers(1)

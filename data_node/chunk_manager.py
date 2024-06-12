@@ -6,23 +6,39 @@ class ChunkManager:
     def __init__(self):
         self.data_path = "/data"
 
+    # def store_blob(self, blob_name, blob_data):
+    #     blob_path = os.path.join(self.data_path, blob_name)
+
+    #     # Create directories if they don't exist
+    #     os.makedirs(os.path.dirname(blob_path), exist_ok=True)
+
+    #     # Convert bytes to a JSON-serializable format
+    #     if isinstance(blob_data, bytes):
+    #         blob_data = blob_data.decode("utf-8")  # Assuming UTF-8 encoding
+
+    #     with open(blob_path, "w") as blob_file:
+    #         json.dump(blob_data, blob_file)
+
     def store_blob(self, blob_name, blob_data):
         blob_path = os.path.join(self.data_path, blob_name)
 
         # Create directories if they don't exist
         os.makedirs(os.path.dirname(blob_path), exist_ok=True)
 
-        # Convert bytes to a JSON-serializable format
-        if isinstance(blob_data, bytes):
-            blob_data = blob_data.decode("utf-8")  # Assuming UTF-8 encoding
+        # Ensure the data is written as bytes
+        with open(blob_path, "wb") as blob_file:
+            blob_file.write(blob_data)
 
-        with open(blob_path, "w") as blob_file:
-            json.dump(blob_data, blob_file)
+    # def retrieve_blob(self, blob_name):
+    #     blob_path = os.path.join(self.data_path, blob_name)
+    #     with open(blob_path, "r") as blob_file:
+    #         return json.load(blob_file)
 
     def retrieve_blob(self, blob_name):
         blob_path = os.path.join(self.data_path, blob_name)
-        with open(blob_path, "r") as blob_file:
-            return json.load(blob_file)
+
+        with open(blob_path, "rb") as blob_file:  # Open in binary read mode
+            return blob_file.read()
 
     def delete_blob(self, blob_name):
         blob_path = os.path.join(self.data_path, blob_name)

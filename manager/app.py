@@ -348,6 +348,6 @@ def list_containers():
 
 if __name__ == "__main__":
     print("starting manager2")
-    # heartbeat = Heartbeat()
-    # heartbeat.start()
+    heartbeat = Heartbeat()
+    heartbeat.start()
     app.run(host="0.0.0.0", port=8090)

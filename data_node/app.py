@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+import base64
 import os
 from chunk_manager import ChunkManager
 import traceback
@@ -26,7 +27,8 @@ def store_blob():
 def retrieve_blob():
     blob_name = request.args.get("blob_name")
     blob_data = chunk_manager.retrieve_blob(blob_name)
-    return jsonify({"status": "success", "blob_data": blob_data}), 200
+    encoded_blob_data = base64.b64encode(blob_data).decode("utf-8")
+    return jsonify({"status": "success", "blob_data": encoded_blob_data}), 200
 
 
 @app.route("/delete_blob", methods=["DELETE"])
