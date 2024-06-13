@@ -1,5 +1,6 @@
 const BASE_URL = "http://localhost:8080";
 const CHUNK_SIZE = 1 * 1024 * 1024; // 1 MB
+const ONE_MB = 1024 * 1024;
 
 const containerElement = document.getElementById("container");
 const createContainerBtn = document.getElementById("create-container");
@@ -15,6 +16,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   document
     .getElementById("files-list")
     .addEventListener("click", handleFileActions);
+  containerElement.addEventListener("change", async () => {
+    console.log("container changed");
+    await fetchFiles();
+  });
 });
 
 async function handleFileActions(event) {
@@ -134,31 +139,44 @@ async function uploadFile() {
   });
   const { blob_id: uploadId, chunk_info: chunkInfo } =
     await uploadIdResponse.json();
+  console.log("uploadId", uploadId);
 
   const promises = [];
   for (let i = 0; i < totalChunks; i++) {
     const start = i * CHUNK_SIZE;
     const end = Math.min(file.size, start + CHUNK_SIZE);
     const chunk = fileData.slice(start, end);
-    console.log("chunk", chunk);
+    // Log the chunk details
+    console.log(`Chunk ${i + 1}:`, chunk);
+    console.log(`Chunk ${i + 1} size:`, chunk.byteLength);
 
-    const formData = new FormData();
-    formData.append("file", chunk);
+    var formData = new FormData();
+    formData.append("file", new Blob([chunk]));
     formData.append("upload_id", uploadId);
-    formData.append("part_number", i + 1);
+    formData.append("part_number", i);
     formData.append("data_node", chunkInfo[i].data_node);
+    for (var pair of formData.entries()) {
+      console.log(pair[0] + ": " + pair[1]);
+    }
 
     promises.push(
       fetch(`${BASE_URL}/upload-part`, {
         method: "POST",
-        body: formData,
+        body: formData, // Do not set Content-Type here
       })
+        .then((response) => {
+          console.log(response);
+          return response.json();
+        })
+        .catch((error) => {
+          console.error("Error uploading part:", error);
+        })
     );
   }
 
   const responses = await Promise.all(promises);
-  const parts = await Promise.all(responses.map((res) => res.json()));
-  console.log(parts);
+  // const parts = await Promise.all(responses.map((res) => res.json()));
+  // console.log(parts);
 
   await fetch(`${BASE_URL}/complete-upload`, {
     method: "POST",
@@ -202,7 +220,8 @@ async function fetchFiles() {
     fileDownloadBtnTd.appendChild(fileDownloadBtn);
 
     fileNameTd.textContent = file.blob_name;
-    fileSizeTd.textContent = file.blob_size;
+    fileSizeTd.textContent =
+      Math.round((file.blob_size * 100) / ONE_MB) / 100 + " MB";
     fileCreatedTd.textContent = new Date().toLocaleString();
     tr.appendChild(fileNameTd);
     tr.appendChild(fileSizeTd);
@@ -213,7 +232,58 @@ async function fetchFiles() {
   });
 }
 
+async function reconstructFile(response, outputFileName) {
+  const json = await response.json();
+  let byteArrays = [];
+
+  for (const chunkId in json) {
+    if (json.hasOwnProperty(chunkId)) {
+      const base64Chunk = json[chunkId].blob_data;
+      const byteCharacters = atob(base64Chunk);
+      const byteNumbers = new Array(byteCharacters.length);
+
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+
+      const byteArray = new Uint8Array(byteNumbers);
+      byteArrays.push(byteArray);
+    }
+  }
+
+  const blob = new Blob(byteArrays, { type: "application/octet-stream" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = outputFileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 async function downloadFile(row) {
+  const containerName = containerElement.value;
+  const fileName = row.children[0].textContent;
+
+  try {
+    const response = await fetch(
+      `http://localhost:8080/get_data?container=${containerName}&blob=${fileName}&user_id=${userId}`
+    );
+
+    if (!response.ok) {
+      console.error("Failed to fetch data:", response);
+      return;
+    }
+
+    await reconstructFile(response, fileName);
+  } catch (error) {
+    console.error("Error:", error);
+  }
+}
+
+async function streamDownloadFile(row) {
   const containerName = containerElement.value;
   const fileName = row.children[0].textContent;
   console.log("download file", fileName);
@@ -223,14 +293,21 @@ async function downloadFile(row) {
   }
 
   const response = await fetch(
-    `${BASE_URL}/download?user_id=${userId}&container=${containerName}&blob=${fileName}`
+    `${BASE_URL}/get_data?user_id=${userId}&container=${containerName}&blob=${fileName}`
   );
   if (!response.ok) {
     throw new Error(`HTTP error! Status: ${response.status}`);
   }
+  const contentType = response.headers.get("Content-Type");
+  console.log("Content-Type:", contentType);
+  const data = await response.json();
+  console.log(data);
 
-  const blob = await response.blob();
-  const url = URL.createObjectURL(blob);
+  chunks = Object.values(data).forEach((chunk) => chunk.blob_data);
+
+  // const blob = await response.blob();
+  // console.log(blob);
+  const url = URL.createObjectURL(new Blob(chunks, { type: contentType }));
   const a = document.createElement("a");
   a.href = url;
   a.download = fileName;

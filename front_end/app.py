@@ -1,5 +1,6 @@
-from flask import Flask, request, jsonify, Response
+from flask import Flask, request, jsonify, Response, make_response, stream_with_context
 from flask_cors import CORS
+import traceback
 import requests
 import os
 
@@ -48,27 +49,44 @@ def initiate_upload():
 
 @app.route("/upload-part", methods=["POST"])
 def upload_part():
-    upload_id = request.form.get("upload_id")
-    part_number = request.form.get("part_number")
-    data_node = request.form.get("data_node")
-    chunk = request.form.get("file")
-    chunk_name = generate_chunk_name(upload_id, part_number)
-    print(chunk)
-    # Store the primary chunk
-    data_node_response = requests.post(
-        f"http://{data_node}/store_blob",
-        files={
-            chunk_name: (
-                chunk_name,
-                chunk,
+    try:
+        print("Request headers:", request.headers)
+        print("Request form:", request.form)
+        print("Request files:", request.files)
+        if "file" not in request.files:
+            print("no file part in request")
+            return (
+                jsonify({"status": "failure", "error": "No file part in the request"}),
+                400,
             )
-        },
-    )
+        upload_id = request.form.get("upload_id")
+        part_number = request.form.get("part_number")
+        data_node = request.form.get("data_node")
+        chunk = request.files.get("file").read()
+        chunk_name = generate_chunk_name(upload_id, part_number)
+        # Print the length of the binary data (optional)
+        print("Received chunk length:", len(chunk))
 
-    if data_node_response.status_code != 201:
-        return jsonify({"status": "failure", "error": "Failed to store chunk"}), 500
+        # Print the binary data itself (as bytes)
+        print("Received chunk:", chunk)
+        # Store the primary chunk
+        data_node_response = requests.post(
+            f"http://{data_node}/store_blob",
+            files={
+                chunk_name: (
+                    chunk_name,
+                    chunk,
+                )
+            },
+        )
 
-    return jsonify({"status": "success"}), 200
+        if data_node_response.status_code != 201:
+            return jsonify({"status": "failure", "error": "Failed to store chunk"}), 500
+
+        return jsonify({"status": "success"}), 200
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"status": "failure", "error": str(e)}), 500
 
 
 @app.route("/complete-upload", methods=["POST"])
@@ -182,11 +200,12 @@ def download_blob():
                 f"http://{primary_node}/retrieve_blob",
                 params={"blob_name": storage_blob_name},
             )
-            if chunk_response.status_code != 200:
-                yield None
+
             yield chunk_response.json().get("blob_data")
 
-    response = Response(generate(), content_type="application/octet-stream")
+    # data = generate()
+    response = Response(stream_with_context(generate()))
+    response.headers["Content-Type"] = "application/octet-stream"
     response.headers["Content-Disposition"] = 'attachment; filename="{}"'.format(
         blob_data["blob_name"]
     )
@@ -209,9 +228,7 @@ def get_data():
     blob_reponse = {}
 
     for chunk_id, chunk_info in blob_data["chunk_info"].items():
-        storage_blob_name = generate_blob_name(
-            user_id, blob_data["container_name"], blob_data["blob_name"], chunk_id
-        )
+        storage_blob_name = generate_chunk_name(blob_data["blob_id"], chunk_id)
         primary_node = chunk_info["primary_node"]
         chunk_response = requests.get(
             f"http://{primary_node}/retrieve_blob",
