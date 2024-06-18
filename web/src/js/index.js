@@ -5,21 +5,24 @@ import {
   fetchAndPopulateContainers,
   createContainer,
 } from "../components/containers/containers";
-import { uploadFile } from "../components/files/files";
+import { uploadFile, createFilesTable } from "../components/files/files";
 
 import "../styles/styles.css";
 
-login.isLoggedIn();
 document
   .getElementById("logout")
   .addEventListener("click", logout.handleLogout);
-
-fetchAndPopulateContainers();
 document
   .getElementById("create-container")
   .addEventListener("click", createContainer);
-
 document.getElementById("upload-file").addEventListener("click", uploadFile);
+document
+  .getElementById("container")
+  .addEventListener("change", createFilesTable);
+await login.isLoggedIn();
+
+await fetchAndPopulateContainers();
+await createFilesTable();
 
 async function handleFileActions(event) {
   const target = event.target;
@@ -32,43 +35,6 @@ async function handleFileActions(event) {
       await deleteFile(row);
     }
   }
-}
-
-async function createFilesTable() {
-  const containerName = containerElement.value;
-  if (!containerName) {
-    alert("Please select a container.");
-    return;
-  }
-  const files = await api.fetchFiles(containerName);
-  console.log(files);
-  const filesList = document.getElementById("files-list");
-  filesList.innerHTML = "";
-  files.blobs.forEach((file) => {
-    const tr = document.createElement("tr");
-    const fileNameTd = document.createElement("td");
-    const fileSizeTd = document.createElement("td");
-    const fileCreatedTd = document.createElement("td");
-    const fileDownloadBtnTd = document.createElement("td");
-    const fileDeleteBtnTd = document.createElement("td");
-    const fileDownloadBtn = document.createElement("button");
-    fileDownloadBtn.textContent = "Download";
-    const fileDeleteBtn = document.createElement("button");
-    fileDeleteBtnTd.appendChild(fileDeleteBtn);
-    fileDeleteBtn.textContent = "Delete";
-    fileDownloadBtnTd.appendChild(fileDownloadBtn);
-
-    fileNameTd.textContent = file.blob_name;
-    fileSizeTd.textContent =
-      Math.round((file.blob_size * 100) / ONE_MB) / 100 + " MB";
-    fileCreatedTd.textContent = new Date().toLocaleString();
-    tr.appendChild(fileNameTd);
-    tr.appendChild(fileSizeTd);
-    tr.appendChild(fileCreatedTd);
-    tr.appendChild(fileDownloadBtnTd);
-    tr.appendChild(fileDeleteBtnTd);
-    filesList.appendChild(tr);
-  });
 }
 
 // async function listContainers() {

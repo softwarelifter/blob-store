@@ -237,19 +237,22 @@ def list_blobs():
         user_id = session["user_id"]
         container_name = request.args.get("container")
         db = DatabaseConnection.get_instance()
-        blobs = db.read_all(
-            "SELECT b.blob_id, c.name, b.blob_name, b.blob_size, b.status FROM blobs b JOIN containers c ON b.container_name = c.name WHERE c.status != 'deleted' AND b.status !='deleted' AND c.name = %s AND c.user_id=%s",
+        container_id = db.read_one(
+            "SELECT id FROM containers WHERE name = %s AND user_id = %s AND status != 'deleted'",
             (container_name, user_id),
+        )
+        blobs = db.read_all(
+            "SELECT blob_id, blob_name, blob_size FROM blobs WHERE container_id = %s AND user_id = %s AND status != 'deleted'",
+            (container_id, user_id),
         )
         if not blobs:
             return jsonify({"blobs": []}), 200
         blobs = [
             {
                 "blob_id": blob[0],
-                "container_name": blob[1],
-                "blob_name": blob[2],
-                "blob_size": blob[3],
-                "status": blob[4],
+                "container_name": container_name,
+                "blob_name": blob[1],
+                "blob_size": blob[2],
             }
             for blob in blobs
         ]
