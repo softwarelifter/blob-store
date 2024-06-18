@@ -1,6 +1,11 @@
 version: "3.8"
 
 services:
+  # web:
+  #   build: ./web
+  #   ports:
+  #     - "8082:8082"
+  #   tty: true
   load_balancer:
     image: nginx:latest
     ports:
@@ -36,6 +41,7 @@ services:
       - POSTGRES_DB=blobstore
       - POSTGRES_USER=blobstore_user
       - POSTGRES_PASSWORD=blobstore_password
+      - SECRET_KEY=secret
     volumes:
       - manager_logs:/logs
     tty: true

@@ -10,9 +10,10 @@ CREATE TABLE users (
 
 CREATE TABLE containers (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(50) UNIQUE NOT NULL,
+    name VARCHAR(50) NOT NULL,
     user_id INTEGER REFERENCES users(id),
-    status VARCHAR(50) NOT NULL DEFAULT 'active'
+    status VARCHAR(50) NOT NULL DEFAULT 'active',
+    UNIQUE (name, user_id)
 );
 
 CREATE TABLE data_nodes (
@@ -23,8 +24,9 @@ CREATE TABLE data_nodes (
 CREATE TABLE blobs (
     id SERIAL PRIMARY KEY,
     blob_id VARCHAR(255) UNIQUE NOT NULL,
-    blob_name VARCHAR(255) UNIQUE NOT NULL,
-    container_name VARCHAR(50) NOT NULL REFERENCES containers(name),
+    blob_name VARCHAR(255) NOT NULL,
+    container_id INTEGER NOT NULL REFERENCES containers(id),
+    user_id INTEGER REFERENCES users(id),
     blob_size INTEGER NOT NULL,
     status VARCHAR(50) NOT NULL DEFAULT 'uploading'
 );

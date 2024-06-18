@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Upload Example</title>
+    <!-- <link rel="stylesheet" href="./styles/styles.css" /> -->
+  </head>
+  <body>
+    <header>
+      <nav>
+        <!-- todo: hide before logged-in -->
+        <button id="logout" class="logout">Logout</button>
+      </nav>
+    </header>
+    <body>
+      <div id="login-dialog" class="login-dialog">
+        <div id="loginSignupForm">
+          <h2>Login</h2>
+          <!-- Login form -->
+          <form id="loginForm">
+            <!-- Inputs for email and password -->
+            <label for="username">Username</label>
+            <input
+              type="text"
+              id="username"
+              placeholder="username"
+              name="username"
+              required
+            />
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="Email" />
+            <label for="password">Password</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="Password"
+              required
+            />
+            <button id="loginSubmit" type="submit">Login</button>
+          </form>
+          <p>
+            Don't have an account?
+            <a href="#signupForm" id="signupLink">Sign up</a>
+          </p>
+        </div>
+
+        <div id="signupForm" class="signup-form">
+          <h2>Sign Up</h2>
+          <!-- Signup form -->
+          <form id="signupForm">
+            <!-- Inputs for email, password, and confirm password -->
+            <input type="email" id="signupEmail" placeholder="Email" required />
+            <input
+              type="password"
+              id="signupPassword"
+              placeholder="Password"
+              required
+            />
+            <input
+              type="password"
+              id="confirmPassword"
+              placeholder="Confirm Password"
+              required
+            />
+            <button type="submit">Sign Up</button>
+          </form>
+          <p>
+            Already have an account?
+            <a href="#loginSignupForm" id="loginLink">Login</a>
+          </p>
+        </div>
+      </div>
+      <main id="main-content" class="main">
+        <div class="flex-div">
+          <div class="flex-div">
+            <select id="container" class="container-dropdown"></select>
+            <!-- <input
+                type="text"
+                id="container-name"
+                class="container-name-input"
+                placeholder="Container Name"
+              /> -->
+            <button id="create-container" class="create-container-btn">
+              create container
+            </button>
+          </div>
+          <div class="upload-div flex-div">
+            <input type="file" id="fileInput" />
+            <button onclick="uploadFile()">Upload</button>
+          </div>
+
+          <div id="status"></div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>File Name</th>
+              <th>Size</th>
+              <th>Created At</th>
+              <th>Download</th>
+              <th>Delete</th>
+            </tr>
+          </thead>
+          <tbody id="files-list"></tbody>
+        </table>
+      </main>
+    </body>
+
+    <script src="js/index.js"></script>
+  </body>
+</html>

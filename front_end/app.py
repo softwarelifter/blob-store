@@ -11,24 +11,45 @@ CORS(app)
 MANAGER_HOST = os.getenv("MANAGER_HOST")
 
 
+@app.route("/is-logged-in", methods=["GET"])
+def is_logged_in():
+    response = requests.get(
+        f"http://{MANAGER_HOST}/is-logged-in", headers=request.headers
+    )
+    return jsonify(response.json()), response.status_code
+
+
 @app.route("/signup", methods=["POST"])
 def signup():
     data = request.get_json()
-    response = requests.post(f"http://{MANAGER_HOST}/signup", json=data)
+    response = requests.post(
+        f"http://{MANAGER_HOST}/signup", json=data, headers=request.headers
+    )
     return jsonify(response.json()), response.status_code
 
 
 @app.route("/login", methods=["POST"])
 def login():
     data = request.get_json()
-    response = requests.post(f"http://{MANAGER_HOST}/login", json=data)
+    response = requests.post(
+        f"http://{MANAGER_HOST}/login", json=data, headers=request.headers
+    )
+    return jsonify(response.json()), response.status_code
+
+
+@app.route("/logout", methods=["POST"])
+def logout():
+    print("Request headers:", request.headers)
+    response = requests.post(f"http://{MANAGER_HOST}/logout", headers=request.headers)
     return jsonify(response.json()), response.status_code
 
 
 @app.route("/create_container", methods=["POST"])
 def create_container():
     data = request.get_json()
-    response = requests.post(f"http://{MANAGER_HOST}/create_container", json=data)
+    response = requests.post(
+        f"http://{MANAGER_HOST}/create_container", json=data, headers=request.headers
+    )
     return jsonify(response.json()), response.status_code
 
 
@@ -43,7 +64,9 @@ def generate_chunk_name(upload_id, part_number):
 @app.route("/initiate-upload", methods=["POST"])
 def initiate_upload():
     data = request.get_json()
-    response = requests.post(f"http://{MANAGER_HOST}/initiate_upload", json=data)
+    response = requests.post(
+        f"http://{MANAGER_HOST}/initiate_upload", json=data, headers=request.headers
+    )
     return jsonify(response.json()), response.status_code
 
 
@@ -92,7 +115,9 @@ def upload_part():
 @app.route("/complete-upload", methods=["POST"])
 def complete_upload():
     data = request.get_json()
-    response = requests.post(f"http://{MANAGER_HOST}/complete-upload", json=data)
+    response = requests.post(
+        f"http://{MANAGER_HOST}/complete-upload", json=data, headers=request.headers
+    )
     return jsonify(response.json()), response.status_code
 
 
@@ -112,6 +137,7 @@ def put_data():
             "blob_size": blob_size,
             "user_id": user_id,
         },
+        headers=request.headers,
     )
 
     if manager_response.status_code != 200:
@@ -166,7 +192,9 @@ def put_data():
 
     # Step 3: Finalize the upload
     finalize_response = requests.post(
-        f"http://{MANAGER_HOST}/finalize_upload", json={"blob_id": blob_id}
+        f"http://{MANAGER_HOST}/finalize_upload",
+        json={"blob_id": blob_id},
+        headers=request.headers,
     )
 
     if finalize_response.status_code != 200:
@@ -186,6 +214,7 @@ def download_blob():
     response = requests.get(
         f"http://{MANAGER_HOST}/get_data",
         params={"container": container, "blob": blob, "user_id": user_id},
+        headers=request.headers,
     )
     if response.status_code != 200:
         return jsonify(response.json()), response.status_code
@@ -220,6 +249,7 @@ def get_data():
     response = requests.get(
         f"http://{MANAGER_HOST}/get_data",
         params={"container": container, "blob": blob, "user_id": user_id},
+        headers=request.headers,
     )
     if response.status_code != 200:
         return jsonify(response.json()), response.status_code
@@ -245,7 +275,9 @@ def get_data():
 @app.route("/delete-blob", methods=["DELETE"])
 def delete_blob():
     data = request.args
-    response = requests.delete(f"http://{MANAGER_HOST}/delete_data", params=data)
+    response = requests.delete(
+        f"http://{MANAGER_HOST}/delete_data", params=data, headers=request.headers
+    )
     return jsonify(response.json()), response.status_code
 
 
@@ -256,6 +288,7 @@ def list_blobs():
     response = requests.get(
         f"http://{MANAGER_HOST}/list_blobs",
         params={"container": container, "user_id": user_id},
+        headers=request.headers,
     )
     return jsonify(response.json()), response.status_code
 
@@ -263,7 +296,9 @@ def list_blobs():
 @app.route("/delete_container", methods=["DELETE"])
 def delete_container():
     data = request.get_json()
-    response = requests.delete(f"http://{MANAGER_HOST}/delete_container", json=data)
+    response = requests.delete(
+        f"http://{MANAGER_HOST}/delete_container", json=data, headers=request.headers
+    )
     return jsonify(response.json()), response.status_code
 
 
@@ -273,6 +308,7 @@ def list_containers():
     response = requests.get(
         f"http://{MANAGER_HOST}/list_containers",
         params={"user_id": user_id},
+        headers=request.headers,
     )
     return jsonify(response.json()), response.status_code
 

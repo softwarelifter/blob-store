@@ -1,101 +1,69 @@
-from flask import Flask, request, jsonify
-import psycopg2
+from flask import Flask, request, jsonify, session
 import os
-import time
 import uuid
-from hashlib import sha256
+
 from heartbeat import Heartbeat
 import traceback
 
+from login import auth_bp, auth_required
+from database_connection import DatabaseConnection
+
 app = Flask(__name__)
+app.register_blueprint(auth_bp)
 
-METADATA_STORAGE_HOST = os.getenv("METADATA_STORAGE_HOST", "metadata_storage")
-METADATA_STORAGE_PORT = os.getenv("METADATA_STORAGE_PORT", "5432")
-POSTGRES_DB = os.getenv("POSTGRES_DB", "blobstore")
-POSTGRES_USER = os.getenv("POSTGRES_USER", "blobstore_user")
-POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "blobstore_password")
-
-
-def connect_to_db():
-    print(f"Connecting to database: {METADATA_STORAGE_HOST}:{METADATA_STORAGE_PORT}")
-    retries = 0
-    db_params = {
-        "dbname": POSTGRES_DB,
-        "user": POSTGRES_USER,
-        "password": POSTGRES_PASSWORD,
-        "host": METADATA_STORAGE_HOST,
-        "port": METADATA_STORAGE_PORT,
-    }
-    while retries < 5:
-        try:
-            retries += 1
-            connection = psycopg2.connect(**db_params)
-            print("Connected to database")
-            return connection
-        except psycopg2.OperationalError:
-            print("Database not ready, waiting...")
-            traceback.print_exc()
-            time.sleep(3)
+app.config["METADATA_STORAGE_HOST"] = os.getenv(
+    "METADATA_STORAGE_HOST", "metadata_storage"
+)
+app.config["METADATA_STORAGE_PORT"] = os.getenv("METADATA_STORAGE_PORT", "5432")
+app.config["POSTGRES_DB"] = os.getenv("POSTGRES_DB", "blobstore")
+app.config["POSTGRES_USER"] = os.getenv("POSTGRES_USER", "blobstore_user")
+app.config["POSTGRES_PASSWORD"] = os.getenv("POSTGRES_PASSWORD", "blobstore_password")
+app.secret_key = os.getenv("SECRET_KEY", "secret")
 
 
-connection = connect_to_db()
+# def connect_to_db():
+#     print(f"Connecting to database: {METADATA_STORAGE_HOST}:{METADATA_STORAGE_PORT}")
+#     retries = 0
+#     db_params = {
+#         "dbname": POSTGRES_DB,
+#         "user": POSTGRES_USER,
+#         "password": POSTGRES_PASSWORD,
+#         "host": METADATA_STORAGE_HOST,
+#         "port": METADATA_STORAGE_PORT,
+#     }
+#     while retries < 5:
+#         try:
+#             retries += 1
+#             connection = psycopg2.connect(**db_params)
+#             print("Connected to database")
+#             return connection
+#         except psycopg2.OperationalError:
+#             print("Database not ready, waiting...")
+#             traceback.print_exc()
+#             time.sleep(3)
 
 
-def hash_password(password):
-    return sha256(password.encode()).hexdigest()
-
-
-@app.route("/signup", methods=["POST"])
-def signup():
-    data = request.get_json()
-    username = data["username"]
-    password = hash_password(data["password"])
-    cur = connection.cursor()
-    cur.execute(
-        "INSERT INTO users (username, password) VALUES (%s, %s)", (username, password)
-    )
-    connection.commit()
-    return jsonify({"status": "success"}), 201
-
-
-@app.route("/login", methods=["POST"])
-def login():
-    data = request.get_json()
-    username = data["username"]
-    password = hash_password(data["password"])
-    cur = connection.cursor()
-    cur.execute(
-        "SELECT * FROM users WHERE username = %s AND password = %s",
-        (username, password),
-    )
-    user = cur.fetchone()
-    if user:
-        return jsonify({"status": "success", "user_id": user[0]}), 200
-    else:
-        return (
-            jsonify({"status": "failure", "message": "Invalid username or password"}),
-            401,
-        )
+# connection = connect_to_db()
 
 
 @app.route("/create_container", methods=["POST"])
+@auth_required
 def create_container():
     try:
         data = request.get_json()
-        user_id = data["user_id"]
+        print(f"Data: {data}")
+        user_id = session["user_id"]
+        print(f"User ID: {user_id}")
         container_name = data["container_name"]
-        print(f"Creating container {container_name} for user {user_id}")
-        cur = connection.cursor()
-        cur.execute(
+        print(f"Creating container: {container_name}")
+        db = DatabaseConnection.get_instance()
+        db.write(
             "INSERT INTO containers (name, user_id) VALUES (%s, %s)",
             (container_name, user_id),
         )
-        connection.commit()
         return jsonify({"status": "success"}), 201
     except Exception as e:
-        # Rollback the transaction if an error occurs
         traceback.print_exc()
-        connection.rollback()
         print(f"Error: {e}")
         return jsonify({"error": "An error occurred"}), 500
 
@@ -128,11 +96,12 @@ def allocate_data_nodes(
 
 
 @app.route("/initiate_upload", methods=["POST"])
+@auth_required
 def initiate_upload():
 
     try:
         data = request.get_json()
-        user_id = data["user_id"]
+        user_id = session["user_id"]
         container_name = data["container_name"]
         chunk_size = int(data.get("chunk_size", DEFAULT_CHUNK_SIZE))
 
@@ -141,20 +110,14 @@ def initiate_upload():
 
         blob_id = generate_blob_id()
         num_chunks = split_blob(blob_size, chunk_size)
-
-        cur = connection.cursor()
-        # Get container_id
-        cur.execute(
+        db = DatabaseConnection.get_instance()
+        container = db.read_one(
             "SELECT id FROM containers WHERE name = %s AND user_id = %s",
             (container_name, user_id),
         )
-        container_id = cur.fetchone()
-        if not container_id:
+        if not container:
             return jsonify({"error": "Container not found"}), 404
-
-        # Execute the query to fetch all data node names
-        cur.execute("SELECT name FROM data_nodes")
-        data_node_names = cur.fetchall()
+        data_node_names = db.read_all("SELECT name FROM data_nodes")
         if not data_node_names:
             return jsonify({"error": "No data nodes available"}), 500
 
@@ -163,21 +126,18 @@ def initiate_upload():
 
         chunk_info = allocate_data_nodes(num_chunks, data_nodes)
 
-        # Update metadata storage
-        cur.execute(
+        db.write(
             "INSERT INTO blobs (blob_id, container_name, blob_name, blob_size) VALUES (%s, %s, %s, %s)",
             (blob_id, container_name, blob_name, blob_size),
         )
-
-        for chunk_id, info in chunk_info.items():
-            primary_node = info["data_node"]
-            replicas = info["replicas"]
-            cur.execute(
-                "INSERT INTO chunks (blob_id, chunk_id, chunk_size, primary_node, replicas) VALUES (%s, %s, %s, %s, %s)",
-                (blob_id, chunk_id, chunk_size, primary_node, replicas),
-            )
-
-        connection.commit()
+        chunk_tuples = [
+            ((blob_id, chunk_id, chunk_size, info["data_node"], info["replicas"]))
+            for chunk_id, info in chunk_info.items()
+        ]
+        db.write_many(
+            "INSERT INTO chunks (blob_id, chunk_id, chunk_size, primary_node, replicas) VALUES (%s, %s, %s, %s, %s)",
+            chunk_tuples,
+        )
         return (
             jsonify(
                 {
@@ -188,50 +148,41 @@ def initiate_upload():
             200,
         )
     except Exception as e:
-        connection.rollback()
         return jsonify({"error": str(e)}), 500
 
 
 @app.route("/complete-upload", methods=["POST"])
+@auth_required
 def complete_upload():
     try:
         data = request.get_json()
         blob_id = data["blob_id"]
-        # Logic to finalize the upload and update metadata
-        cur = connection.cursor()
-        cur.execute(
-            "UPDATE blobs SET status = 'uploaded' WHERE blob_id = %s", (blob_id,)
-        )
-        connection.commit()
+        db = DatabaseConnection.get_instance()
+        db.write("UPDATE blobs SET status = 'uploaded' WHERE blob_id = %s", (blob_id,))
         return jsonify({"status": "success"}), 200
     except Exception as e:
-        connection.rollback()
         return jsonify({"error": str(e)}), 500
-    # finally:
-    # connection.close()
 
 
 @app.route("/get_data", methods=["GET"])
+@auth_required
 def get_data():
-
     try:
-        user_id = request.args.get("user_id")
+        user_id = session["user_id"]
         container_name = request.args.get("container")
         blob_name = request.args.get("blob")
-        cur = connection.cursor()
-        cur.execute(
+        db = DatabaseConnection.get_instance()
+        blob = db.read_one(
             "SELECT b.blob_id, c.name, b.blob_name, b.blob_size, b.status FROM blobs b JOIN containers c ON b.container_name = c.name WHERE c.name = %s AND c.user_id=%s AND b.blob_name = %s",
             (container_name, user_id, blob_name),
         )
-        blob = cur.fetchone()
         if not blob:
             return jsonify({"error": "Blob not found"}), 404
         blob_id, container_name, blob_name, blob_size, status = blob
-        cur.execute(
+        chunks = db.read_all(
             "SELECT chunk_id, chunk_size, primary_node, replicas FROM chunks WHERE blob_id = %s",
             (blob_id,),
         )
-        chunks = cur.fetchall()
         chunk_info = {}
         for chunk in chunks:
             chunk_id, chunk_size, primary_node, replicas = chunk
@@ -256,43 +207,40 @@ def get_data():
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
-    # finally:
-    # cur.close()
 
 
 @app.route("/delete_data", methods=["DELETE"])
+@auth_required
 def delete_data():
-    data = request.args
-    container_name = data.get("container_name")
-    blob_name = data.get("blob_name")
-
-    if not container_name or not blob_name:
-        return jsonify({"error": "container_name and blob_name are required"}), 400
-
     try:
-        with connection.cursor() as cur:
-            cur.execute(
-                "UPDATE blobs SET status='deleted' WHERE container_name = %s AND blob_name = %s",
-                (container_name, blob_name),
-            )
-        connection.commit()
+        data = request.args
+        container_name = data.get("container_name")
+        blob_name = data.get("blob_name")
+
+        if not container_name or not blob_name:
+            return jsonify({"error": "container_name and blob_name are required"}), 400
+        db = DatabaseConnection.get_instance()
+        db.write(
+            "UPDATE blobs SET status = 'deleted' WHERE container_name = %s AND blob_name = %s",
+            (container_name, blob_name),
+        )
         return jsonify({"status": "success"}), 200
     except Exception as e:
-        connection.rollback()
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 
 @app.route("/list_blobs", methods=["GET"])
+@auth_required
 def list_blobs():
-    user_id = request.args.get("user_id")
-    container_name = request.args.get("container")
     try:
-        cur = connection.cursor()
-        cur.execute(
+        user_id = session["user_id"]
+        container_name = request.args.get("container")
+        db = DatabaseConnection.get_instance()
+        blobs = db.read_all(
             "SELECT b.blob_id, c.name, b.blob_name, b.blob_size, b.status FROM blobs b JOIN containers c ON b.container_name = c.name WHERE c.status != 'deleted' AND b.status !='deleted' AND c.name = %s AND c.user_id=%s",
             (container_name, user_id),
         )
-        blobs = cur.fetchall()
         if not blobs:
             return jsonify({"blobs": []}), 200
         blobs = [
@@ -312,45 +260,39 @@ def list_blobs():
 
 
 @app.route("/delete_container", methods=["DELETE"])
+@auth_required
 def delete_container():
-    data = request.get_json()
-    container_name = data.get("container_name")  # Use get to avoid KeyError
-
-    if not container_name:
-        return jsonify({"error": "container_name is required"}), 400
 
     try:
-        with connection.cursor() as cur:
-            cur.execute(
-                "UPDATE blobs SET status='deleted' WHERE container_name = %s",
-                (container_name,),
-            )
-            cur.execute(
-                "UPDATE containers SET status='deleted' WHERE name = %s",
-                (container_name,),
-            )
-        connection.commit()
+        data = request.get_json()
+        container_name = data.get("container_name")  # Use get to avoid KeyError
+
+        if not container_name:
+            return jsonify({"error": "container_name is required"}), 400
+        db = DatabaseConnection.get_instance()
+        db.write(
+            "UPDATE blobs SET status = 'deleted' WHERE container_name = %s",
+            (container_name,),
+        )
         return jsonify({"status": "success"}), 200
     except Exception as e:
-        connection.rollback()
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 
 @app.route("/list_containers", methods=["GET"])
+@auth_required
 def list_containers():
-    user_id = request.args.get("user_id")
-    if not user_id:
-        return jsonify({"error": "user_id is required"}), 400
 
     try:
-        cur = connection.cursor()
-        cur.execute(
+        user_id = session["user_id"]
+        if not user_id:
+            return jsonify({"error": "user_id is required"}), 400
+        db = DatabaseConnection.get_instance()
+        containers = db.read_all(
             "SELECT * FROM containers WHERE status != 'deleted' AND user_id = %s",
             (user_id,),
         )
-        containers = cur.fetchall()  # Use fetchall to get all matching rows
-
-        cur.close()  # Close the cursor after use
 
         if not containers:
             return jsonify({"containers": []}), 200
