@@ -32,3 +32,33 @@ export function handleLoginRedirect() {
   document.getElementById("main-content").style.display = "none";
   document.getElementById("login-dialog").style.display = "block";
 }
+
+export async function reconstructFile(json, outputFileName) {
+  let byteArrays = [];
+
+  for (const chunkId in json) {
+    if (json.hasOwnProperty(chunkId)) {
+      const base64Chunk = json[chunkId].blob_data;
+      const byteCharacters = atob(base64Chunk);
+      const byteNumbers = new Array(byteCharacters.length);
+
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+
+      const byteArray = new Uint8Array(byteNumbers);
+      byteArrays.push(byteArray);
+    }
+  }
+
+  const blob = new Blob(byteArrays, { type: "application/octet-stream" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = outputFileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}

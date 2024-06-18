@@ -173,7 +173,7 @@ def get_data():
         blob_name = request.args.get("blob")
         db = DatabaseConnection.get_instance()
         blob = db.read_one(
-            "SELECT b.blob_id, c.name, b.blob_name, b.blob_size, b.status FROM blobs b JOIN containers c ON b.container_name = c.name WHERE c.name = %s AND c.user_id=%s AND b.blob_name = %s",
+            "SELECT b.blob_id, c.name, b.blob_name, b.blob_size, b.status FROM blobs b JOIN containers c ON b.container_id = c.id WHERE c.name = %s AND c.user_id=%s AND b.blob_name = %s",
             (container_name, user_id, blob_name),
         )
         if not blob:

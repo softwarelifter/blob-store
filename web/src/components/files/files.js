@@ -1,4 +1,9 @@
-import { readFileData, CHUNK_SIZE, ONE_MB } from "../../js/utils.js";
+import {
+  readFileData,
+  CHUNK_SIZE,
+  ONE_MB,
+  reconstructFile,
+} from "../../js/utils.js";
 import api from "../../js/api.js";
 
 const containerElement = document.getElementById("container");
@@ -58,4 +63,32 @@ export async function createFilesTable() {
     tr.appendChild(fileDeleteBtnTd);
     filesList.appendChild(tr);
   });
+}
+
+export async function handleFileActions(event) {
+  const target = event.target;
+  const row = target.closest("tr");
+  if (target.tagName === "BUTTON") {
+    const action = target.textContent.toLowerCase();
+    if (action === "download") {
+      await downloadFile(row);
+    } else if (action === "delete") {
+      await deleteFile(row);
+    }
+  }
+}
+export async function downloadFile(row) {
+  const containerName = containerElement.value;
+  const fileName = row.children[0].textContent;
+
+  const response = await api.downloadFileApi(fileName, containerName);
+  await reconstructFile(response, fileName);
+}
+
+export async function deleteFile(row) {
+  const containerName = containerElement.value;
+  const fileName = row.children[0].textContent;
+  console.log("delete file", fileName);
+  await api.deleteFileApi(fileName, containerName);
+  // await fetchFiles();
 }
