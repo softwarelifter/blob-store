@@ -4,7 +4,6 @@ const containerElement = document.getElementById("container");
 
 export async function fetchAndPopulateContainers() {
   const containers = await api.listContainers();
-  console.log("containers", containers);
   containers.containers.forEach((container) => {
     const option = document.createElement("option");
     option.value = container.name;
@@ -20,5 +19,6 @@ export async function createContainer() {
     return;
   }
   const res = await api.createContainerApi(containerName);
+  await fetchAndPopulateContainers();
   console.log("res", res);
 }

@@ -1,4 +1,7 @@
-function readFileData(file) {
+export const CHUNK_SIZE = 1 * 1024 * 1024; // 1 MB
+export const ONE_MB = 1024 * 1024;
+
+export function readFileData(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (event) => {

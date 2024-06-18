@@ -127,8 +127,8 @@ def initiate_upload():
         chunk_info = allocate_data_nodes(num_chunks, data_nodes)
 
         db.write(
-            "INSERT INTO blobs (blob_id, container_name, blob_name, blob_size) VALUES (%s, %s, %s, %s)",
-            (blob_id, container_name, blob_name, blob_size),
+            "INSERT INTO blobs (blob_id, container_id, user_id, blob_name, blob_size) VALUES (%s, %s, %s, %s, %s)",
+            (blob_id, container[0], user_id, blob_name, blob_size),
         )
         chunk_tuples = [
             ((blob_id, chunk_id, chunk_size, info["data_node"], info["replicas"]))

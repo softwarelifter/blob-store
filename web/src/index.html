@@ -51,13 +51,24 @@
           <!-- Signup form -->
           <form id="signupForm">
             <!-- Inputs for email, password, and confirm password -->
+            <label for="signupUsername">Username</label>
+            <input
+              type="text"
+              id="signupUsername"
+              placeholder="username"
+              name="username"
+              required
+            />
+            <label for="signupEmail">Email</label>
             <input type="email" id="signupEmail" placeholder="Email" required />
+            <label for="signupPassword">Password</label>
             <input
               type="password"
               id="signupPassword"
               placeholder="Password"
               required
             />
+            <label for="confirmPassword">Confirm Password</label>
             <input
               type="password"
               id="confirmPassword"
@@ -88,7 +99,7 @@
           </div>
           <div class="upload-div flex-div">
             <input type="file" id="fileInput" />
-            <button onclick="uploadFile()">Upload</button>
+            <button id="upload-file">Upload</button>
           </div>
 
           <div id="status"></div>

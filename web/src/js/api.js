@@ -45,23 +45,32 @@ class Api {
 
     const uploadIdResponse = await apiClient.post("/initiate-upload", payload);
     const { blob_id: uploadId, chunk_info: chunkInfo } = await uploadIdResponse;
+    console.log("uploadId", uploadId);
 
-    // const promises = [];
+    const promises = [];
     for (let i = 0; i < totalChunks; i++) {
       const start = i * chunkSize;
       const end = Math.min(file.size, start + chunkSize);
       const chunk = fileData.slice(start, end);
+      console.log("chunk", chunk);
 
-      var formData = new FormData();
+      const formData = new FormData();
       formData.append("file", new Blob([chunk]));
       formData.append("upload_id", uploadId);
       formData.append("part_number", i);
       formData.append("data_node", chunkInfo[i].data_node);
 
-      await apiClient.post("/upload-part", formData);
+      const uploadPartPromise = await apiClient.post("/upload-part", formData);
+      // promises.push(apiClient.post("/upload-part", formData));
+      // const uploadPartPromise = fetch("http://localhost:8080/upload-part", {
+      //   method: "POST",
+      //   body: formData,
+      // }).then((response) => response.json());
+
+      promises.push(uploadPartPromise);
     }
 
-    // const responses = await Promise.all(promises);
+    const responses = await Promise.all(promises);
     // const parts = await Promise.all(responses.map((res) => res.json()));
     // console.log(parts);
 

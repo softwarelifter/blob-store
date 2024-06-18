@@ -43,16 +43,10 @@ class Login {
       .addEventListener("submit", this.signIn);
 
     // Handle signup form submission
-    document
-      .getElementById("signupForm")
-      .addEventListener("submit", function (event) {
-        event.preventDefault();
-        // Get signup form values
-        const email = document.getElementById("signupEmail").value;
-        const password = document.getElementById("signupPassword").value;
-        const confirmPassword =
-          document.getElementById("confirmPassword").value;
-      });
+    document.getElementById("signupForm").addEventListener("submit", (e) => {
+      console.log(e);
+      this.signUp(e);
+    });
   }
 
   async signIn(e) {
@@ -75,7 +69,21 @@ class Login {
   }
   async signUp(e) {
     e.preventDefault();
-    const formData = new FormData(e.target);
+    console.log(e.target);
+    const email = document.getElementById("signupEmail").value;
+    const username = document.getElementById("signupUsername").value;
+    const password = document.getElementById("signupPassword").value;
+    const confirmPassword = document.getElementById("confirmPassword").value;
+    console.log(password, confirmPassword, email, username);
+    if (password !== confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
+    const formData = new FormData();
+    formData.append("email", email);
+    formData.append("password", password);
+    formData.append("username", username);
+    console.log(formData);
     const response = await api.signUp(formData);
 
     if (response.status === "success") {

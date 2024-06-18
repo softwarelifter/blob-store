@@ -5,6 +5,7 @@ import {
   fetchAndPopulateContainers,
   createContainer,
 } from "../components/containers/containers";
+import { uploadFile } from "../components/files/files";
 
 import "../styles/styles.css";
 
@@ -17,6 +18,8 @@ fetchAndPopulateContainers();
 document
   .getElementById("create-container")
   .addEventListener("click", createContainer);
+
+document.getElementById("upload-file").addEventListener("click", uploadFile);
 
 async function handleFileActions(event) {
   const target = event.target;
@@ -116,25 +119,25 @@ async function createFilesTable() {
 //   });
 // }
 
-async function uploadFile() {
-  console.log("upload file");
-  const containerName = containerElement.value;
-  if (!containerName) {
-    alert("Please select a container.");
-    return;
-  }
-  const fileInput = document.getElementById("fileInput");
-  const file = fileInput.files[0];
-  if (!file) {
-    alert("Please select a file.");
-    return;
-  }
+// async function uploadFile() {
+//   console.log("upload file");
+//   const containerName = containerElement.value;
+//   if (!containerName) {
+//     alert("Please select a container.");
+//     return;
+//   }
+//   const fileInput = document.getElementById("fileInput");
+//   const file = fileInput.files[0];
+//   if (!file) {
+//     alert("Please select a file.");
+//     return;
+//   }
 
-  // Read the file data
-  const fileData = await readFileData(file);
-  await api.uploadFileApi(file, fileData, containerName, CHUNK_SIZE);
-  document.getElementById("status").textContent = "Upload complete!";
-}
+//   // Read the file data
+//   const fileData = await readFileData(file);
+//   await api.uploadFileApi(file, fileData, containerName, CHUNK_SIZE);
+//   document.getElementById("status").textContent = "Upload complete!";
+// }
 
 async function reconstructFile(json, outputFileName) {
   let byteArrays = [];

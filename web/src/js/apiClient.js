@@ -34,7 +34,6 @@ class ApiClient {
 
   // Core request method
   async request(endpoint, method, body = null, customHeaders = {}) {
-    console.log("commonHeaders", commonHeaders);
     const headers = { ...this.defaultHeaders, ...customHeaders };
 
     const options = {
@@ -43,7 +42,13 @@ class ApiClient {
     };
 
     if (body) {
-      options.body = JSON.stringify(body);
+      if (body instanceof FormData) {
+        delete headers["Content-Type"]; // Let the browser set it automatically
+        options.body = body;
+      } else {
+        options.headers["Content-Type"] = "application/json";
+        options.body = JSON.stringify(body);
+      }
     }
 
     const response = await fetch(`${this.baseURL}${endpoint}`, options);
