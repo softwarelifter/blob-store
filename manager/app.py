@@ -214,15 +214,20 @@ def get_data():
 def delete_data():
     try:
         data = request.args
-        container_name = data.get("container_name")
-        blob_name = data.get("blob_name")
+        container_name = data.get("container")
+        blob_name = data.get("blob")
+        user_id = session["user_id"]
 
         if not container_name or not blob_name:
             return jsonify({"error": "container_name and blob_name are required"}), 400
         db = DatabaseConnection.get_instance()
+        container_id = db.read_one(
+            "SELECT id FROM containers WHERE name = %s AND user_id = %s",
+            (container_name, user_id),
+        )
         db.write(
-            "UPDATE blobs SET status = 'deleted' WHERE container_name = %s AND blob_name = %s",
-            (container_name, blob_name),
+            "UPDATE blobs SET status = 'deleted' WHERE container_id = %s AND blob_name = %s AND user_id = %s",
+            (container_id, blob_name, user_id),
         )
         return jsonify({"status": "success"}), 200
     except Exception as e:

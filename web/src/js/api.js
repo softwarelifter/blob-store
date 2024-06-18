@@ -93,7 +93,7 @@ class Api {
       return;
     }
     return await apiClient.delete(
-      `/delete_blob?container=${containerName}&blob=${fileName}`
+      `/delete-blob?container=${containerName}&blob=${fileName}`
     );
   }
 }

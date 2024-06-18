@@ -90,5 +90,5 @@ export async function deleteFile(row) {
   const fileName = row.children[0].textContent;
   console.log("delete file", fileName);
   await api.deleteFileApi(fileName, containerName);
-  // await fetchFiles();
+  await createFilesTable();
 }
