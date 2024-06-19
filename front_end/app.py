@@ -299,6 +299,23 @@ def delete_container():
     response = requests.delete(
         f"http://{MANAGER_HOST}/delete_container", params=data, headers=request.headers
     )
+    for chunk in response.json().get("chunks", []):
+        chunk_name = generate_chunk_name(chunk.get("blob_id"), chunk.get("chunk_id"))
+        print("chunk_name", chunk_name)
+        res = requests.delete(
+            f"http://{chunk.get('primary_node')}/delete_blob",
+            params={"chunk_name": chunk_name},
+        )
+        res = res.json()
+        print(
+            res.get("status"),
+            res.get("chunk_name"),
+        )
+        # for replica in chunk.get("replicas", []):
+        #     requests.delete(
+        #         f"http://{replica}/delete_blob",
+        #         params={chunk_name: chunk_name},
+        #     )
     return jsonify(response.json()), response.status_code
 
 

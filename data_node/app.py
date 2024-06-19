@@ -3,6 +3,7 @@ import base64
 import os
 from chunk_manager import ChunkManager
 import traceback
+import asyncio
 
 app = Flask(__name__)
 chunk_manager = ChunkManager()
@@ -31,10 +32,12 @@ def retrieve_blob():
 
 
 @app.route("/delete_blob", methods=["DELETE"])
-def delete_blob():
-    blob_name = request.get_json()["blob_name"]
-    chunk_manager.delete_blob(blob_name)
-    return jsonify({"status": "success"}), 200
+async def delete_blob():
+    chunk_name = request.args.get("chunk_name")
+    print(f"Deleting chunk '{chunk_name}'")
+    asyncio.create_task(chunk_manager.delete_blob(chunk_name))
+    print(f"Chunk '{chunk_name}' will be deleted")
+    return jsonify({"status": "success", "chunk_name": chunk_name}), 200
 
 
 if __name__ == "__main__":

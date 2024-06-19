@@ -1,5 +1,6 @@
 import os
 import json
+import asyncio
 
 
 class ChunkManager:
@@ -29,7 +30,7 @@ class ChunkManager:
         with open(blob_path, "rb") as blob_file:  # Open in binary read mode
             return blob_file.read()
 
-    def delete_blob(self, blob_name):
+    async def delete_blob(self, blob_name):
         blob_path = os.path.join(self.data_path, blob_name)
         if os.path.exists(blob_path):
-            os.remove(blob_path)
+            await asyncio.to_thread(os.remove, blob_path)
