@@ -24,6 +24,7 @@ function addEventListenerOnce(element, event, handler) {
 }
 
 export function handleDashboardRedirect() {
+  console.log("handleDashboardRedirect");
   document.getElementById("main-content").style.display = "block";
   document.getElementById("login-dialog").style.display = "none";
 }

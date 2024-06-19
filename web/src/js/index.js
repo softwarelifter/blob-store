@@ -30,5 +30,9 @@ document
 
 await login.isLoggedIn();
 
-await fetchAndPopulateContainers();
-await createFilesTable();
+export async function loadDashboard() {
+  await fetchAndPopulateContainers();
+  await createFilesTable();
+}
+
+loadDashboard();

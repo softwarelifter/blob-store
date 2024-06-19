@@ -12,8 +12,12 @@ class Login {
         handleDashboardRedirect();
       }
     } catch (e) {
-      console.log("Error:", e);
-      this.handleLogin();
+      if (e.message === "Unauthorized") {
+        console.log("Error:", e);
+        this.handleLogin();
+      } else {
+        console.log("Error:", e);
+      }
     }
   }
   async handleLogin() {
@@ -50,21 +54,26 @@ class Login {
   }
 
   async signIn(e) {
-    e.preventDefault();
+    try {
+      e.preventDefault();
 
-    const formData = new FormData();
-    formData.append("email", document.getElementById("email").value);
-    formData.append("password", document.getElementById("password").value);
-    formData.append("username", document.getElementById("username").value);
-    const responsse = await api.signIn(formData);
+      const formData = new FormData();
+      formData.append("email", document.getElementById("email").value);
+      formData.append("password", document.getElementById("password").value);
+      formData.append("username", document.getElementById("username").value);
+      const responsse = await api.signIn(formData);
 
-    if (responsse.status === "success") {
-      alert("Login successful");
-      document.cookie = `authToken=${responsse.token}`;
-      console.log("document.cookie", document.cookie);
-      handleDashboardRedirect();
-    } else {
-      alert("Invalid credentials");
+      if (responsse.status === "success") {
+        alert("Login successful");
+        document.cookie = `authToken=${responsse.token}`;
+        console.log("document.cookie", document.cookie);
+        handleDashboardRedirect();
+        location.reload();
+      } else {
+        alert("Invalid credentials");
+      }
+    } catch (e) {
+      console.log("Error:", e);
     }
   }
   async signUp(e) {

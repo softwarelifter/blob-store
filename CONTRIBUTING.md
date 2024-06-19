@@ -16,7 +16,7 @@ There are several ways you can contribute to the project:
 
 Here are the currently open issues that you can contribute to:
 
-1. **UI client to manage the store and files**
+1. **UI client to manage the store and files** Done
 2. **Inclusion of rate limiter**
 3. **Load balancer is not able to resolve front-end hostname**
 4. **Hostname resolution issue for replica node**

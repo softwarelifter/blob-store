@@ -1,4 +1,5 @@
 // apiClient.js
+import login from "../components/login/login";
 
 const BASE_URL = "http://localhost:8080";
 const commonHeaders = {
@@ -59,11 +60,13 @@ class ApiClient {
   // Handle the response
   async handleResponse(response) {
     if (!response.ok) {
+      if (response.status === 401) {
+        login.handleLogin();
+      }
       const error = await response.json();
       throw new Error(error.message || "API request failed");
     }
-
-    return response.json();
+    return await response.json();
   }
 }
 
