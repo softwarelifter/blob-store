@@ -4,6 +4,7 @@ import logout from "../components/logout/logout";
 import {
   fetchAndPopulateContainers,
   createContainer,
+  deleteContainer,
 } from "../components/containers/containers";
 import {
   uploadFile,
@@ -19,6 +20,10 @@ document
 document
   .getElementById("create-container")
   .addEventListener("click", createContainer);
+document
+  .getElementById("delete-container")
+  .addEventListener("click", deleteContainer);
+
 document.getElementById("upload-file").addEventListener("click", uploadFile);
 document
   .getElementById("container")

@@ -39,5 +39,6 @@ CREATE TABLE chunks (
     blob_id VARCHAR(255) REFERENCES blobs(blob_id),   
     chunk_size INTEGER NOT NULL,
     primary_node VARCHAR(50) REFERENCES data_nodes(name),
-    replicas VARCHAR(50)[] NOT NULL
+    replicas VARCHAR(50)[] NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'uploading'
 );

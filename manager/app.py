@@ -272,16 +272,36 @@ def list_blobs():
 def delete_container():
 
     try:
-        data = request.get_json()
+        data = request.args
         container_name = data.get("container_name")  # Use get to avoid KeyError
 
         if not container_name:
             return jsonify({"error": "container_name is required"}), 400
         db = DatabaseConnection.get_instance()
         db.write(
-            "UPDATE blobs SET status = 'deleted' WHERE container_name = %s",
+            """
+                    WITH container_id AS (
+                        SELECT id FROM containers WHERE name = %s
+                    ),
+                    update_container AS (
+                        UPDATE containers
+                        SET status = 'deleted'
+                        WHERE id = (SELECT id FROM container_id)
+                        RETURNING id
+                    ),
+                    update_blobs AS (
+                        UPDATE blobs
+                        SET status = 'deleted'
+                        WHERE container_id = (SELECT id FROM update_container)
+                        RETURNING blob_id
+                    )
+                    UPDATE chunks
+                    SET status = 'deleted'
+                    WHERE blob_id IN (SELECT blob_id FROM update_blobs);
+                    """,
             (container_name,),
         )
+
         return jsonify({"status": "success"}), 200
     except Exception as e:
         traceback.print_exc()

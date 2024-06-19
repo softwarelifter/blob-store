@@ -16,6 +16,14 @@ export async function fetchAndPopulateContainers() {
   }
 }
 
+function appendContainer(container) {
+  const option = document.createElement("option");
+  option.selected = true;
+  option.value = container;
+  option.textContent = container;
+  containerElement.appendChild(option);
+}
+
 export async function createContainer() {
   try {
     const containerName = prompt("Enter a container name:");
@@ -23,7 +31,24 @@ export async function createContainer() {
       return;
     }
     const res = await api.createContainerApi(containerName);
-    await fetchAndPopulateContainers();
+    appendContainer(containerName);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+export async function deleteContainer() {
+  try {
+    const containerName = containerElement.value;
+    if (!containerName) {
+      alert("Please select a container to delete");
+      return;
+    }
+    await api.deleteContainerApi(containerName);
+    document.getElementById(
+      "status"
+    ).textContent = `deleted container ${containerName}!`;
+    location.reload();
   } catch (error) {
     console.error(error);
   }

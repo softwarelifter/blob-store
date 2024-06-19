@@ -33,6 +33,11 @@ class Api {
       container_name: containerName,
     });
   }
+  async deleteContainerApi(containerName) {
+    return await apiClient.delete(
+      `/delete_container?container_name=${containerName}`
+    );
+  }
   async uploadFileApi(file, fileData, containerName, chunkSize) {
     const totalChunks = Math.ceil(file.size / chunkSize);
 

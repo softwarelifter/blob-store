@@ -295,9 +295,9 @@ def list_blobs():
 
 @app.route("/delete_container", methods=["DELETE"])
 def delete_container():
-    data = request.get_json()
+    data = request.args
     response = requests.delete(
-        f"http://{MANAGER_HOST}/delete_container", json=data, headers=request.headers
+        f"http://{MANAGER_HOST}/delete_container", params=data, headers=request.headers
     )
     return jsonify(response.json()), response.status_code
 
