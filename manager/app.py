@@ -221,15 +221,37 @@ def delete_data():
         if not container_name or not blob_name:
             return jsonify({"error": "container_name and blob_name are required"}), 400
         db = DatabaseConnection.get_instance()
-        container_id = db.read_one(
-            "SELECT id FROM containers WHERE name = %s AND user_id = %s",
-            (container_name, user_id),
+        chunks = db.write(
+            """
+                    WITH container_id AS (
+                        SELECT id FROM containers WHERE name = %s AND user_id = %s
+                    ),
+                    update_blobs AS (
+                        UPDATE blobs
+                        SET status = 'deleted'
+                        WHERE container_id = container_id AND blob_name = %s
+                        RETURNING blob_id
+                    ),
+                    update_chunks AS (
+                    UPDATE chunks
+                    SET status = 'deleted'
+                    WHERE blob_id IN (SELECT blob_id FROM update_blobs)
+                    RETURNING blob_id, chunk_id, primary_node, replicas
+                    )
+                    SELECT * FROM update_chunks;
+                    """,
+            (container_name, user_id, blob_name),
         )
-        db.write(
-            "UPDATE blobs SET status = 'deleted' WHERE container_id = %s AND blob_name = %s AND user_id = %s",
-            (container_id, blob_name, user_id),
-        )
-        return jsonify({"status": "success"}), 200
+        chunks = [
+            {
+                "blob_id": chunk[0],
+                "chunk_id": chunk[1],
+                "primary_node": chunk[2],
+                "replicas": chunk[3],
+            }
+            for chunk in chunks
+        ]
+        return jsonify({"status": "success", "chunks": chunks}), 200
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
