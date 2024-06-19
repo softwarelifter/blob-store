@@ -48,6 +48,8 @@ services:
 
   data_node1:
     build: ./data_node
+    environment:
+      - PORT=9001
     ports:
       - "9001:9001"
     volumes:
@@ -56,6 +58,8 @@ services:
   # data_node2 is not listening on it's port, look into this.
   data_node2:
     build: ./data_node
+    environment:
+      - PORT=9002
     ports:
       - "9002:9002"
     volumes:
